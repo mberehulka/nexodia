@@ -1,2 +1,3 @@
-# nexodia
- 3D mmo rpg written in Rust
+# Nexodia
+
+3D MMO RPG written in Rust
