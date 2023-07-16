@@ -5,7 +5,6 @@ panic = "abort"
 strip = true
 
 [workspace.dependencies]
-ash = { version = "0.37.3", default-features = false, features = ["linked","debug"]}
 
 [workspace]
 members = [

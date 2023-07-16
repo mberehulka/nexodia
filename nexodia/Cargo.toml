@@ -6,9 +6,8 @@ edition = "2021"
 
 [dependencies]
 winit = "0.28.6"
-raw-window-handle = "0.5.2"
+ash = { version = "0.37.3", default-features = false, features = ["linked","debug"]}
 ash-window = "0.12.0"
-
-ash = { workspace = true }
+raw-window-handle = "0.5.2"
 
 utils = { path = "../utils" }
