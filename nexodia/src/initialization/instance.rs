@@ -6,9 +6,6 @@ pub fn new(window: &Window, entry: &Entry) -> Instance {
     let app_info = ash::vk::ApplicationInfo::builder()
         .application_name(CString::new("Nexodia").unwrap().as_c_str())
         .engine_name(CString::new("No Engine").unwrap().as_c_str())
-        .application_version(make_api_version(0, 1, 0, 0))
-        .engine_version(make_api_version(0, 1, 0, 0))
-        .api_version(make_api_version(0, 1, 0, 0))
         .build();
 
     let extension_names = super::required_extension_names(window);
