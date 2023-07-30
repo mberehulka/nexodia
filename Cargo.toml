@@ -9,5 +9,6 @@ strip = true
 [workspace]
 members = [
     "nexodia",
-    "utils"
+    "utils",
+    "compiler"
 ]

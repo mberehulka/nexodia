@@ -3,11 +3,13 @@
 #[macro_use]
 extern crate utils;
 
-mod initialization;
 mod game;
-mod builder;
+mod assets;
+mod shader;
+mod object;
 
 fn main() {
-    utils::init_logs();
-    game::Game::builder().build()
+    utils::Logger::new();
+    game::Game::builder()
+        .build()
 }

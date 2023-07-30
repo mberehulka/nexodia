@@ -6,8 +6,11 @@ edition = "2021"
 
 [dependencies]
 winit = "0.28.6"
-ash = { version = "0.37.3", default-features = false, features = ["linked","debug"]}
-ash-window = "0.12.0"
-raw-window-handle = "0.5.2"
+wgpu = "0.17.0"
+pollster = { version = "0.3.0", default-features = false }
+bytemuck = { version = "1.13.1", features = ["derive"] }
 
 utils = { path = "../utils" }
+
+[build-dependencies]
+compiler = { path = "../compiler/" }

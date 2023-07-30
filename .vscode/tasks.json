@@ -3,7 +3,7 @@
     "tasks": [
         {
             "label": "A",
-            "command": "cargo run",
+            "command": "cargo run --bin nexodia",
             "type": "shell",
             "presentation": {
                 "reveal": "always",
@@ -14,7 +14,18 @@
         },
         {
             "label": "B",
-            "command": "cargo run --release",
+            "command": "cargo run --bin compiler",
+            "type": "shell",
+            "presentation": {
+                "reveal": "always",
+                "clear": true,
+                "panel": "shared"
+            },
+            "group": "build"
+        },
+        {
+            "label": "C",
+            "command": "cargo run --bin nexodia --release",
             "type": "shell",
             "presentation": {
                 "reveal": "always",
