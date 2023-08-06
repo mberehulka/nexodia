@@ -2,12 +2,8 @@ use wgpu::{RenderPipeline, Device, TextureFormat};
 
 pub mod basic_f_p;
 
-pub enum Material {
-    BasicFP(basic_f_p::Material)
-}
-
 pub struct Shaders {
-    basic_f_p: RenderPipeline
+    pub basic_f_p: RenderPipeline
 }
 impl Shaders {
     pub fn new(

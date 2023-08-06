@@ -5,10 +5,14 @@ panic = "abort"
 strip = true
 
 [workspace.dependencies]
+winit = "0.28.6"
+wgpu = "0.17.0"
+bytemuck = { version = "1.13.1", features = ["derive"] }
+zstd = "0.12.4"
 
 [workspace]
 members = [
-    "nexodia",
-    "utils",
-    "compiler"
+    "engine",
+    "compiler",
+    "nexodia"
 ]

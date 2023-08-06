@@ -1,11 +1,21 @@
-/// Basic Fixed Object with vertex: [ position ]
+/// Basic Fixed Object with vertex::P
 
 use wgpu::{RenderPipeline, Device, TextureFormat};
+
+use crate::{material_bgl, Engine, camera_bgl};
 
 #[repr(C)]
 #[derive(Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Material {
-    color: [f32;3]
+    pub color: [f32;4]
+}
+impl crate::Material for Material {
+    fn cast_slice(&self) -> Vec<u8> {
+        bytemuck::cast_slice(&[*self]).to_vec()
+    }
+    fn shader(&self, e: &'static Engine) -> &'static RenderPipeline {
+        &e.shaders.basic_f_p
+    }
 }
 
 pub fn new(
@@ -16,6 +26,7 @@ pub fn new(
     let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: None,
         bind_group_layouts: &[
+            &camera_bgl(device),
             &material_bgl(device)
         ],
         push_constant_ranges: &[]
@@ -61,23 +72,5 @@ pub fn new(
             alpha_to_coverage_enabled: false
         },
         multiview: None
-    })
-}
-
-pub fn material_bgl(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: None,
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None
-                },
-                count: None
-            }
-        ]
     })
 }

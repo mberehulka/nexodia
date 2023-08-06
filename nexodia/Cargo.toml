@@ -1,16 +1,10 @@
 [package]
 name = "nexodia"
 version = "0.1.0"
-authors = ["muriel guedes pucci berehulka <murielguedes@pm.me>"]
 edition = "2021"
 
 [dependencies]
-winit = "0.28.6"
-wgpu = "0.17.0"
-pollster = { version = "0.3.0", default-features = false }
-bytemuck = { version = "1.13.1", features = ["derive"] }
+wgpu = { workspace = true }
+bytemuck = { workspace = true }
 
-utils = { path = "../utils" }
-
-[build-dependencies]
-compiler = { path = "../compiler/" }
+engine = { path = "../engine" }

@@ -4,8 +4,6 @@ use serde_json::{Value, json};
 
 #[derive(Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Settings {
-    pub vertex_type: String,
-    pub indexed: bool,
     pub compression_level: i32
 }
 impl Settings {

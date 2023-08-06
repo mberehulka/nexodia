@@ -1,6 +1,7 @@
 use std::{path::{PathBuf, Path}, sync::{mpsc::{channel, Sender}, Arc, Mutex}, io::{Write, Cursor}};
 
 mod settings;  use settings::*;
+mod writer;
 mod gl;
 
 pub fn compile(main_path: PathBuf) {

@@ -2,23 +2,23 @@ use std::{path::PathBuf, io::Write, fs::OpenOptions};
 use chrono::Timelike;
 use log::Level;
 
-pub const FG_UNSET: &'static str = "\x1b[0m";
-pub const FG_BLACK: &'static str = "\x1b[30m";
-pub const FG_WHITE: &'static str = "\x1b[97m";
-pub const FG_RED: &'static str = "\x1b[31m";
-pub const FG_GREEN: &'static str = "\x1b[32m";
-pub const FG_YELLOW: &'static str = "\x1b[33m";
-pub const FG_BLUE: &'static str = "\x1b[34m";
-pub const FG_MAGENTA: &'static str = "\x1b[35m";
-pub const FG_CYAN: &'static str = "\x1b[36m";
-pub const FG_DARK_GRAY: &'static str = "\x1b[90m";
-pub const FG_LIGHT_GRAY: &'static str = "\x1b[37m";
-pub const FG_LIGHT_RED: &'static str = "\x1b[91m";
-pub const FG_LIGHT_GREEN: &'static str = "\x1b[92m";
-pub const FG_LIGHT_YELLOW: &'static str = "\x1b[93m";
-pub const FG_LIGHT_BLUE: &'static str = "\x1b[94m";
-pub const FG_LIGHT_MAGENTA: &'static str = "\x1b[95m";
-pub const FG_LIGHT_CYAN: &'static str = "\x1b[96m";
+const FG_UNSET: &'static str = "\x1b[0m";
+const _FG_BLACK: &'static str = "\x1b[30m";
+const _FG_WHITE: &'static str = "\x1b[97m";
+const FG_RED: &'static str = "\x1b[31m";
+const FG_GREEN: &'static str = "\x1b[32m";
+const FG_YELLOW: &'static str = "\x1b[33m";
+const FG_BLUE: &'static str = "\x1b[34m";
+const _FG_MAGENTA: &'static str = "\x1b[35m";
+const _FG_CYAN: &'static str = "\x1b[36m";
+const FG_DARK_GRAY: &'static str = "\x1b[90m";
+const _FG_LIGHT_GRAY: &'static str = "\x1b[37m";
+const _FG_LIGHT_RED: &'static str = "\x1b[91m";
+const _FG_LIGHT_GREEN: &'static str = "\x1b[92m";
+const _FG_LIGHT_YELLOW: &'static str = "\x1b[93m";
+const _FG_LIGHT_BLUE: &'static str = "\x1b[94m";
+const _FG_LIGHT_MAGENTA: &'static str = "\x1b[95m";
+const _FG_LIGHT_CYAN: &'static str = "\x1b[96m";
 
 pub struct Logger {
     path: PathBuf

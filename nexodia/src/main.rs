@@ -1,15 +1,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 #[macro_use]
-extern crate utils;
+extern crate engine;
+use engine::*;
 
-mod game;
-mod assets;
-mod shader;
-mod object;
+mod scenes;
+mod camera;
 
 fn main() {
-    utils::Logger::new();
-    game::Game::builder()
-        .build()
+    let (el, e) = Engine::new();
+    e.load_scene::<scenes::main::Scene>();
+    e.start(el)
 }
