@@ -4,7 +4,10 @@ use serde_json::{Value, json};
 
 #[derive(Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Settings {
-    pub compression_level: i32
+    pub compression_level: i32,
+    pub uv: bool,
+    pub normal: bool,
+    pub pixel_type: bool
 }
 impl Settings {
     pub fn merge(&mut self, path: &Path) {

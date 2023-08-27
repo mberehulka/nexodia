@@ -10,13 +10,14 @@ log = "0.4.19"
 backtrace = "0.3.68"
 chrono = "0.4.26"
 native-dialog = "0.6.4"
+spin_sleep = "1.1.1"
 
 winit = { workspace = true }
 wgpu = { workspace = true }
 bytemuck = { workspace = true }
 zstd = { workspace = true }
 
-utils = { path = "../utils" }
+math = { path = "../math" }
 
 [build-dependencies]
 compiler = { path = "../compiler/" }

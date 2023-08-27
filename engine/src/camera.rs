@@ -1,23 +1,46 @@
 use wgpu::{util::DeviceExt, Device};
 
-use crate::Script;
+use crate::Engine;
 
-pub struct DefaultCamera {
-    pub bind_group: wgpu::BindGroup
+#[repr(C)]
+#[derive(Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct CameraBinding {
+    pub matrix: [[f32;4];4]
 }
-impl DefaultCamera {
+
+pub struct Camera {
+    buffer: wgpu::Buffer,
+    pub bind_group: wgpu::BindGroup,
+    pub bgl: wgpu::BindGroupLayout
+}
+impl Camera {
     pub fn new(device: &Device) -> Self {
         let buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: &bytemuck::cast_slice(&[[0.;16]]),
-                usage: wgpu::BufferUsages::UNIFORM
+                contents: &bytemuck::cast_slice(&[CameraBinding::default()]),
+                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
             }
         );
+        let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                wgpu::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
+                    ty: wgpu::BindingType::Buffer {
+                        ty: wgpu::BufferBindingType::Uniform,
+                        has_dynamic_offset: false,
+                        min_binding_size: None
+                    },
+                    count: None
+                }
+            ]
+        });
         Self {
             bind_group: device.create_bind_group(&wgpu::BindGroupDescriptor {
                 label: None,
-                layout: &camera_bgl(&device),
+                layout: &bgl,
                 entries: &[
                     wgpu::BindGroupEntry {
                         binding: 0,
@@ -25,38 +48,13 @@ impl DefaultCamera {
                     }
                 ]
             }),
+            buffer,
+            bgl
         }
     }
 }
-impl Script for DefaultCamera {
-    fn setup(e: &'static crate::Engine) -> Self where Self: Sized {
-        Self::new(&e.device)
+impl Engine {
+    pub fn update_camera_buffer(&self, buffer: CameraBinding) {
+        self.queue.write_buffer(&self.camera.buffer, 0, bytemuck::cast_slice(&[buffer]))
     }
-}
-impl Camera for DefaultCamera {
-    fn bind_group(&self) -> &wgpu::BindGroup {
-        &self.bind_group
-    }
-}
-
-pub trait Camera: Script {
-    fn bind_group(&self) -> &wgpu::BindGroup;
-}
-
-pub fn camera_bgl(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-    device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-        label: None,
-        entries: &[
-            wgpu::BindGroupLayoutEntry {
-                binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Uniform,
-                    has_dynamic_offset: false,
-                    min_binding_size: None
-                },
-                count: None
-            }
-        ]
-    })
 }

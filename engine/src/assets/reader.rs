@@ -16,6 +16,10 @@ impl Reader {
         }
     }
     #[inline(always)]
+    pub fn get_rest(self) -> Vec<u8> {
+        self.bytes[self.cursor..].to_vec()
+    }
+    #[inline(always)]
     pub fn read_byte(&mut self) -> u8 {
         self.cursor += 1;
         self.bytes[self.cursor-1]

@@ -1,23 +1,22 @@
-use wgpu::RenderPass;
+use crate::{Mesh, Engine, Shader, MaterialBuffer, Instances};
 
-use crate::{Mesh, MaterialBuffer, Engine, Material};
-
-#[derive(Clone)]
-pub struct Object {
-    pub mesh: Mesh,
-    pub material: MaterialBuffer
+pub struct Object<S: Shader> {
+    pub material_buffer: S::MaterialBuffer,
+    pub mesh: Mesh<S::Vertex>,
+    pub instances: Instances
+}
+impl<S: Shader> Object<S> {
+    pub fn set_material(self, e: &Engine, material: S::Material) -> Self {
+        self.material_buffer.set(e, material);
+        self
+    }
 }
 impl Engine {
-    pub fn new_object(&'static self, mesh: Mesh, material: Box<dyn Material>) -> Object {
+    pub fn new_object<S: Shader>(&self, mesh: Mesh<S::Vertex>, material: S::Material) -> Object<S> {
         Object {
+            material_buffer: S::MaterialBuffer::new(self, material),
             mesh,
-            material: self.new_material_buffer(material)
+            instances: Default::default()
         }
-    }
-    pub fn render_object<'r, 'o: 'r>(&'static self, render_pass: &mut RenderPass<'r>, object: &'o Object) {
-        render_pass.set_pipeline(object.material.shader);
-        render_pass.set_bind_group(1, &object.material.bind_group, &[]);
-        render_pass.set_vertex_buffer(0, object.mesh.vertices_buffer.slice(..));
-        render_pass.draw(0..object.mesh.vertices_len, 0..1);
     }
 }

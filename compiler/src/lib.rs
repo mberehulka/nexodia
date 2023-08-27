@@ -3,6 +3,7 @@ use std::{path::{PathBuf, Path}, sync::{mpsc::{channel, Sender}, Arc, Mutex}, io
 mod settings;  use settings::*;
 mod writer;
 mod gl;
+mod image;
 
 pub fn compile(main_path: PathBuf) {
     std::fs::create_dir_all(&main_path).unwrap();
@@ -47,8 +48,12 @@ fn dir_loop(dir: &Path, tx: &Sender<Option<(PathBuf, Settings)>>, mut settings: 
 
 fn compile_file(path: PathBuf, settings: Settings) {
     let bytes = match path.extension().unwrap().to_str().unwrap() {
-        "gltf" | "glb" => gl::compile(path.clone(), &settings),
-        "json" | "bin" => {return}
+        "gltf" | "glb" => gl::compile(&path, &settings),
+        "jpg" | "jpeg" | "png" => image::compile(&path, &settings),
+        "ttf" => std::fs::read(&path).unwrap(),
+        "fbx" => {return}
+        "json" => {return}
+        "bin" => {return}
         ext => return eprintln!("Extension: {ext} not supported !")
     };
     std::fs::OpenOptions::new()

@@ -1,0 +1,12 @@
+[package]
+name = "tests"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winit = { workspace = true }
+
+cgmath = "0.18.0"
+
+math = { path = "../math" }
+engine = { path = "../engine" }

@@ -14,7 +14,7 @@
         },
         {
             "label": "B",
-            "command": "cargo run --bin compiler",
+            "command": "cargo run --bin compiler --release",
             "type": "shell",
             "presentation": {
                 "reveal": "always",
@@ -22,6 +22,17 @@
                 "panel": "shared"
             },
             "group": "build"
-        }
+        },
+        {
+            "label": "C",
+            "command": "cargo run --bin nexodia --release",
+            "type": "shell",
+            "presentation": {
+                "reveal": "always",
+                "clear": true,
+                "panel": "shared"
+            },
+            "group": "build"
+        },
     ]
 }

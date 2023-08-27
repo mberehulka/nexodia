@@ -127,7 +127,7 @@ fn pretty_backtrace() -> String {
                         name.starts_with("std::") ||
                         name.starts_with("log::") ||
                         name.starts_with("backtrace::") ||
-                        name.starts_with("utils::logger::pretty_backtrace") ||
+                        name.starts_with("engine::logger::pretty_backtrace") ||
                         name.contains("$") ||
                         name.contains("<") ||
                         !name.contains("::")

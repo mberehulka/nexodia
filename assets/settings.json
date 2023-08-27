@@ -1,4 +1,6 @@
 {
-    "vertex_type": "p",
-    "compression_level": 1
+    "compression_level": 12,
+    "uv": false,
+    "normal": false,
+    "pixel_opacity": false
 }
