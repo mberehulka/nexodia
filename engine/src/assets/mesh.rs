@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc, time::Instant, marker::PhantomData};
 use wgpu::util::DeviceExt;
 
-use crate::{vertex::Vertex, Engine, Reader};
+use crate::{Engine, Reader, Vertex};
 
 #[derive(Clone)]
 pub struct Mesh<V: Vertex> {

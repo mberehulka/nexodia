@@ -2,24 +2,7 @@
 
 use std::sync::Arc;
 
-use engine::{Engine, Material as _, DefaultMaterialBuffer, vertex::Vertex};
-
-#[repr(C)]
-#[derive(Default, Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct ShaderVertex {
-    pub position: [f32;3]
-}
-impl Vertex for ShaderVertex {
-    const ATTRIBUTES: &'static [wgpu::VertexAttribute] = &wgpu::vertex_attr_array![
-        0 => Float32x3
-    ];
-    fn requires(_uv: bool, _normal: bool) -> bool { true }
-    fn new(i: usize, positions: &[[f32;3]], _uvs: &[[f32;2]], _normals: &[[f32;3]]) -> Self {
-        Self {
-            position: positions[i]
-        }
-    }
-}
+use engine::{Engine, Material as _, DefaultMaterialBuffer, vertex::{self, Vertex}, ObjectRender};
 
 #[repr(C)]
 #[derive(Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -38,7 +21,8 @@ pub struct Shader {
 impl engine::Shader for Shader {
     type Material = Material;
     type MaterialBuffer = DefaultMaterialBuffer;
-    type Vertex = ShaderVertex;
+    type Vertex = vertex::p::Vertex;
+    type InstanceBinding = ();
     fn pipeline(&self) -> &wgpu::RenderPipeline {
         &self.pipeline
     }
@@ -48,7 +32,7 @@ impl engine::Shader for Shader {
                 e,
                 wgpu::include_wgsl!("./shader.wgsl").into(),
                 &[
-                    ShaderVertex::LAYOUT
+                    Self::Vertex::LAYOUT
                 ],
                 &[
                     &e.camera.bgl,
@@ -58,3 +42,4 @@ impl engine::Shader for Shader {
         }
     }
 }
+impl ObjectRender for Shader {}

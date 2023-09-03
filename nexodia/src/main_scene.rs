@@ -1,4 +1,4 @@
-use engine::{Object, Engine, Script, Shader, Frame};
+use engine::{Object, Engine, Script, Frame, ObjectRender};
 use winit::event::VirtualKeyCode;
 
 use crate::shaders::*;

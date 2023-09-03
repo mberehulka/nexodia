@@ -1,18 +1,13 @@
 use wgpu::{ShaderModuleDescriptor, RenderPipeline, VertexBufferLayout, BindGroupLayout};
 
-use crate::{Material, vertex::Vertex, Object, MaterialBuffer, Engine};
+use crate::{Material, vertex::Vertex, Object, MaterialBuffer, Engine, InstanceBinding};
 
 pub trait Shader {
     type Material: Material;
     type MaterialBuffer: MaterialBuffer<Self::Material>;
     type Vertex: Vertex;
+    type InstanceBinding: InstanceBinding;
     fn pipeline(&self) -> &wgpu::RenderPipeline;
-    fn render_object<'r, 's: 'r>(&'s self, render_pass: &mut wgpu::RenderPass<'r>, object: &'s Object<Self>) where Self: Sized {
-        render_pass.set_pipeline(self.pipeline());
-        render_pass.set_bind_group(1, object.material_buffer.bind_group(), &[]);
-        render_pass.set_vertex_buffer(0, object.mesh.vertices_buffer.slice(..));
-        render_pass.draw(0..object.mesh.vertices_len, 0..1);
-    }
     fn new(e: &'static Engine) -> Self;
     fn default_pipeline(
         e: &'static Engine,
@@ -66,5 +61,14 @@ pub trait Shader {
             },
             multiview: None
         })
+    }
+}
+
+pub trait ObjectRender: Shader {
+    fn render_object<'r, 's: 'r>(&'s self, render_pass: &mut wgpu::RenderPass<'r>, object: &'s Object<Self>) where Self: Sized {
+        render_pass.set_pipeline(self.pipeline());
+        render_pass.set_bind_group(1, object.material_buffer.bind_group(), &[]);
+        render_pass.set_vertex_buffer(0, object.mesh.vertices_buffer.slice(..));
+        render_pass.draw(0..object.mesh.vertices_len, 0..1);
     }
 }

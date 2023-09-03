@@ -4,6 +4,7 @@ use crate::{Engine, Texture, Material};
 
 pub mod initialization;
 pub mod bgls;
+pub mod shaders;
 
 impl Engine {
     #[inline(always)]

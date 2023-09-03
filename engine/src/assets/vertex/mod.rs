@@ -1,5 +1,8 @@
 use bytemuck::Pod;
 
+pub mod pu;
+pub mod p;
+
 pub trait Vertex: Default + Pod {
     const ATTRIBUTES: &'static [wgpu::VertexAttribute];
     const LAYOUT: wgpu::VertexBufferLayout<'static> = wgpu::VertexBufferLayout {
