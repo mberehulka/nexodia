@@ -1,10 +1,11 @@
-use wgpu::{Buffer, util::DeviceExt, BufferUsages, BindGroup};
+use wgpu::{Buffer, util::DeviceExt, BufferUsages};
 
-use crate::{Engine, Texture, Material};
+use crate::Engine;
 
 pub mod initialization;
 pub mod bgls;
 pub mod shaders;
+pub mod materials;
 
 impl Engine {
     #[inline(always)]
@@ -17,26 +18,4 @@ impl Engine {
             }
         )
     }
-}
-
-#[inline(always)]
-pub fn material_bind_group_with_texture<M: Material>(e: &Engine, buffer: &Buffer, texture: &Texture) -> BindGroup {
-    e.device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: None,
-        layout: &M::bind_group_layout(&e.device),
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: buffer.as_entire_binding()
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: wgpu::BindingResource::TextureView(&texture.view)
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
-                resource: wgpu::BindingResource::Sampler(&texture.sampler)
-            }
-        ]
-    })
 }

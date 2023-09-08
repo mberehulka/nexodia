@@ -51,10 +51,7 @@ fn compile_file(path: PathBuf, settings: Settings) {
         "gltf" | "glb" => gl::compile(&path, &settings),
         "jpg" | "jpeg" | "png" => image::compile(&path, &settings),
         "ttf" => std::fs::read(&path).unwrap(),
-        "fbx" => {return}
-        "json" => {return}
-        "bin" => {return}
-        ext => return eprintln!("Extension: {ext} not supported !")
+        _ => return
     };
     std::fs::OpenOptions::new()
         .write(true)

@@ -44,8 +44,8 @@ impl Quaternion {
     }
 }
 impl From<Vec3> for Quaternion {
-    fn from(v: Vec3) -> Self {
-        Self::from_euler(v.x, v.y, v.z)
+    fn from(Vec3 {x, y, z}: Vec3) -> Self {
+        Self::from_euler(x, y, z)
     }
 }
 impl Mul<Vec3> for Quaternion {

@@ -1,10 +1,21 @@
-use wgpu::{Instance, Adapter, Device, Queue, Surface};
+use wgpu::{Instance, Adapter, Device, Queue, Surface, Features, Dx12Compiler};
 use winit::{event_loop::EventLoop, window::{Window, WindowBuilder}, dpi::{PhysicalSize, PhysicalPosition}};
 
+pub fn new_instance() -> wgpu::Instance {
+    wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::DX12,
+        dx12_shader_compiler: Dx12Compiler::Fxc
+    })
+}
+
 pub fn new_device(adapter: &Adapter) -> (Device, Queue) {
+    let mut features = adapter.features();
+    features.remove(Features::MAPPABLE_PRIMARY_BUFFERS);
+    features.insert(Features::TEXTURE_BINDING_ARRAY);
+    println!("Using device features: {features:#?}");
     pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
-            features: wgpu::Features::empty(),
+            features,
             limits: wgpu::Limits::default(),
             label: None
         },
@@ -18,7 +29,7 @@ pub fn new_adapter(instance: &Instance, surface: &Surface) -> Adapter {
         compatible_surface: Some(&surface),
         force_fallback_adapter: false
     })).unwrap();
-    let adapters = instance.enumerate_adapters(wgpu::Backends::all())
+    let adapters = instance.enumerate_adapters(wgpu::Backends::DX12)
         .filter(|adapter| {
             let info = adapter.get_info();
             let supported = adapter.is_surface_supported(surface);
@@ -42,30 +53,13 @@ pub fn configure_surface(
     surface: &wgpu::Surface
 ) -> wgpu::SurfaceConfiguration {
     let caps = surface.get_capabilities(adapter);
-    let format = caps.formats.into_iter()
-        .filter(|format| {
-            info!("Format: {format:?} {}", format.is_srgb());
-            format.is_srgb()
-        })
-        .collect::<Vec<_>>()
-        .into_iter().next().unwrap();
-    for pm in caps.present_modes {
-        info!("PM: {pm:?}")
-    }
-    let alpha_mode = caps.alpha_modes.into_iter()
-        .map(|am| {
-            info!("AM: {am:?}");
-            am
-        })
-        .collect::<Vec<_>>()
-        .into_iter().next().unwrap();
     let config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format,
+        format: caps.formats.into_iter().find(|v| v.is_srgb()).unwrap(),
         width: window_size.width,
         height: window_size.height,
         present_mode: wgpu::PresentMode::AutoVsync,
-        alpha_mode,
+        alpha_mode: caps.alpha_modes.into_iter().next().unwrap(),
         view_formats: vec![]
     };
     surface.configure(device, &config);

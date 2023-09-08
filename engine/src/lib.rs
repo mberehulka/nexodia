@@ -16,5 +16,4 @@ mod instances;  pub use instances::*;
 mod shader;     pub use shader::*;
 mod frame;      pub use frame::*;
 
-pub mod window;
 pub mod utils;

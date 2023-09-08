@@ -1,12 +1,17 @@
 [package]
 name = "tests"
-version = "0.1.0"
-edition = "2021"
+description = "Tests crate"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+license.workspace = true
+publish = false
 
 [dependencies]
-winit = { workspace = true }
-
-cgmath = "0.18.0"
-
-math = { path = "../math" }
-engine = { path = "../engine" }
+winit.workspace = true
+cgmath.workspace = true
+math.path = "../math"
+engine.path = "../engine"

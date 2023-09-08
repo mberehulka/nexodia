@@ -6,3 +6,5 @@ rustflags = ["-Ctarget-feature=+crt-static"]
 
 [target.i586-pc-windows-msvc]
 rustflags = ["-Ctarget-feature=+crt-static"]
+
+[build]

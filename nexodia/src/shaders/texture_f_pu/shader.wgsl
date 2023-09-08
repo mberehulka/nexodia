@@ -22,18 +22,12 @@ fn vs_main(vertex: Vertex) -> VertexOutput {
     return vout;
 }
 
-struct Material {
-    @location(0) color: vec4<f32>
-}
 @group(1) @binding(0)
-var<uniform> material: Material;
-@group(1) @binding(1)
 var t_diffuse: texture_2d<f32>;
-@group(1)@binding(2)
+@group(1)@binding(1)
 var s_diffuse: sampler;
 
 @fragment
 fn fs_main(vout: VertexOutput) -> @location(0) vec4<f32> {
-    let texture = textureSample(t_diffuse, s_diffuse, vout.uv);
-    return texture * material.color;
+    return textureSample(t_diffuse, s_diffuse, vout.uv);
 }

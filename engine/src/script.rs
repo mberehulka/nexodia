@@ -1,5 +1,5 @@
 use std::{sync::{Mutex, Arc, mpsc::{channel, Receiver}, atomic::AtomicU64}, thread::Thread, collections::HashMap};
-use winit::event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode};
+use winit::{event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode}, dpi::PhysicalSize};
 
 use crate::{Engine, Frame};
 
@@ -11,6 +11,7 @@ pub trait Script: Send + Sync {
     fn render(&mut self, frame: &mut Frame) {}
     fn on_key_press(&mut self, key: VirtualKeyCode) {}
     fn on_key_up(&mut self, key: VirtualKeyCode) {}
+    fn window_resized(&mut self, new_size: PhysicalSize<u32>) {}
     fn dropped(&mut self){}
 }
 
@@ -29,10 +30,10 @@ pub struct ScriptThread {
     pub script: Arc<Mutex<dyn Script>>
 }
 impl ScriptThread {
-    pub fn new<S: Script + 'static>(e: &'static Engine, id: u64) -> ScriptThread {
+    pub fn new<S: Script + 'static>(script: S, id: u64) -> ScriptThread {
         let events = Arc::new(Mutex::new(Vec::<ThreadEvent>::new()));
         let (tx, rx) = channel();
-        let script = Arc::new(Mutex::new(S::new(e)));
+        let script = Arc::new(Mutex::new(script));
         ScriptThread {
             id,
             script: script.clone(),
@@ -47,11 +48,16 @@ impl ScriptThread {
                             ThreadEvent::Event(event) => match event {
                                 Event::WindowEvent { event: WindowEvent::KeyboardInput { input: KeyboardInput {
                                     state: ElementState::Pressed, virtual_keycode: Some(key), ..
-                                }, .. }, .. } => script.lock().unwrap().on_key_press(key),
+                                }, .. }, .. } =>
+                                    script.lock().unwrap().on_key_press(key),
                                 Event::WindowEvent { event: WindowEvent::KeyboardInput { input: KeyboardInput {
                                     state: ElementState::Released, virtual_keycode: Some(key), ..
-                                }, .. }, .. } => script.lock().unwrap().on_key_up(key),
-                                Event::RedrawRequested(_) => script.lock().unwrap().update(),
+                                }, .. }, .. } =>
+                                    script.lock().unwrap().on_key_up(key),
+                                Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } =>
+                                    script.lock().unwrap().window_resized(new_size),
+                                Event::RedrawRequested(_) =>
+                                    script.lock().unwrap().update(),
                                 _ => script.lock().unwrap().event(event)
                             },
                             ThreadEvent::Ready => tx.send(()).unwrap(),
@@ -74,6 +80,10 @@ impl ScriptThread {
         self.send(ThreadEvent::Ready);
         self.rx.lock().unwrap().recv().unwrap()
     }
+    pub fn drop(&self) {
+        self.send(ThreadEvent::Close);
+        self.wait()
+    }
 }
 
 #[derive(Default)]
@@ -82,9 +92,9 @@ pub struct Scripts {
     id: AtomicU64
 }
 impl Engine {
-    pub fn add_script<S: Script + 'static>(&'static self) -> ScriptThread {
+    pub fn add_script<S: Script + 'static>(&'static self, script: S) -> ScriptThread {
         let id = self.scripts.id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let thread = ScriptThread::new::<S>(self, id);
+        let thread = ScriptThread::new(script, id);
         self.scripts.threads.lock().unwrap().insert(id, thread.clone());
         thread
     }

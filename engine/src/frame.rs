@@ -28,18 +28,14 @@ impl Frame {
         })
     }
     #[inline(always)]
-    pub fn new_render_pass(&mut self, depth: bool, clear: bool) -> RenderPass {
+    pub fn new_render_pass(&mut self, depth: bool) -> RenderPass {
         self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view: &self.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: if clear {
-                        wgpu::LoadOp::Clear(wgpu::Color::BLACK)
-                    } else {
-                        wgpu::LoadOp::Load
-                    },
+                    load: wgpu::LoadOp::Load,
                     store: true
                 }
             })],
@@ -47,11 +43,7 @@ impl Frame {
                 Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.depth_texture.view,
                     depth_ops: Some(wgpu::Operations {
-                        load: if clear {
-                            wgpu::LoadOp::Clear(1.)
-                        } else {
-                            wgpu::LoadOp::Load
-                        },
+                        load: wgpu::LoadOp::Clear(1.),
                         store: true
                     }),
                     stencil_ops: None

@@ -1,13 +1,17 @@
 [package]
 name = "nexodia"
-version = "0.1.0"
-edition = "2021"
+description = "Game crate"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+license.workspace = true
 
 [dependencies]
-wgpu_text = "0.8.3"
-
-winit = { workspace = true }
-wgpu = { workspace = true }
-bytemuck = { workspace = true }
-
-engine = { path = "../engine" }
+wgpu_text.workspace = true
+winit.workspace = true
+wgpu.workspace = true
+bytemuck.workspace = true
+engine.path = "../engine"

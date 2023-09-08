@@ -1,13 +1,18 @@
 [package]
 name = "compiler"
-version = "0.1.0"
-edition = "2021"
+description = "Assets compiler"
+version.workspace = true
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+keywords.workspace = true
+license.workspace = true
 
 [dependencies]
-num_cpus = "1.16.0"
-serde = { version = "1.0.174", default_features = false, features = ["derive"] }
-serde_json = "1.0.103"
-gltf = "1.2.0"
-image = "0.24.7"
-
-zstd = { workspace = true }
+num_cpus.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+gltf.workspace = true
+image.workspace = true
+zstd.workspace = true

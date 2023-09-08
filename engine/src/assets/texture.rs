@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc, time::Instant};
 
 use wgpu::{
-    Extent3d, TextureDimension, TextureFormat, TextureUsages, TextureViewDescriptor, SamplerDescriptor,
+    Extent3d, TextureDimension, TextureFormat, TextureViewDescriptor, SamplerDescriptor,
     AddressMode, FilterMode, CompareFunction, TextureView, Sampler, Device, TextureDescriptor, BindGroup
 };
 
@@ -134,7 +134,7 @@ impl DepthTexture {
             sample_count: 1,
             dimension: TextureDimension::D2,
             format: DEPTH_FORMAT,
-            usage: TextureUsages::RENDER_ATTACHMENT,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             view_formats: &[]
         });
         let view = texture.create_view(&TextureViewDescriptor::default());

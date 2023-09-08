@@ -1,61 +1,66 @@
-/// Textured Fixed Object with vertex::P
-
-use std::sync::Arc;
-use engine::{Engine, Material as _, Texture, vertex::{self, Vertex}, ObjectRender};
+use engine::{vertex::*, InstanceBinding, InstancesRenderer, Texture, utils::materials::StaticMaterialBuffer, Engine};
 
 #[repr(C)]
-#[derive(Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct MaterialBinding {
-    pub color: [f32;4]
+#[derive(Copy, Clone, bytemuck::Zeroable, bytemuck::Pod)]
+pub struct Instance {
+    pub translation: [f32;3],
+    pub scale: [f32;3],
+    pub texture_id: u32
 }
-pub struct Material {
-    pub texture: Texture,
-    pub color: [f32;4]
-}
-impl engine::Material for Material {
-    fn bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
-        engine::utils::bgls::material_with_texture(device)
-    }
-    fn bytes(&self) -> Vec<u8> {
-        bytemuck::bytes_of(&MaterialBinding { color: self.color }).to_vec()
-    }
-}
+impl InstanceBinding for Instance {}
 
-pub struct MaterialBuffer {
-    bind_group: Arc<wgpu::BindGroup>,
-    buffer: Arc<wgpu::Buffer>
-}
-impl engine::MaterialBuffer<Material> for MaterialBuffer {
-    fn bind_group(&self) -> &wgpu::BindGroup { &self.bind_group }
-    fn buffer(&self) -> &wgpu::Buffer { &self.buffer }
-    fn new(e: &Engine, material: Material) -> Self {
-        let buffer = e.new_buffer(&material.bytes(), wgpu::BufferUsages::UNIFORM);
-        Self {
-            bind_group: engine::utils::material_bind_group_with_texture::<Material>(e, &buffer, &material.texture).into(),
-            buffer: buffer.into()
-        }
+pub struct Material(pub Vec<Texture>);
+impl engine::Material for Material {
+    type MaterialBuffer = StaticMaterialBuffer;
+    fn create_buffer(&self, e: &'static Engine) -> StaticMaterialBuffer {
+        StaticMaterialBuffer(
+            e.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                label: None,
+                layout: &engine::utils::bgls::texture_array(&e.device, self.0.len()as u32),
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureViewArray(
+                            &self.0.iter().map(|v|v.view.as_ref()).collect::<Vec<_>>()
+                        )
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::SamplerArray(
+                            &self.0.iter().map(|v|v.sampler.as_ref()).collect::<Vec<_>>()
+                        )
+                    }
+                ]
+            })
+        )
     }
 }
 
 pub struct Shader(wgpu::RenderPipeline);
 impl engine::Shader for Shader {
     type Material = Material;
-    type MaterialBuffer = MaterialBuffer;
-    type Vertex = vertex::pu::Vertex;
-    type InstanceBinding = ();
+    type Vertex = engine::vertex::pu::Vertex;
+    type Instance = Instance;
     fn pipeline(&self) -> &wgpu::RenderPipeline { &self.0 }
-    fn new(e: &'static Engine) -> Self {
-        Self(Self::default_pipeline(
+    fn new(e: &'static engine::Engine) -> Self {
+        Self(engine::utils::shaders::default_pipeline(
             e,
             wgpu::include_wgsl!("./shader.wgsl").into(),
             &[
-                Self::Vertex::LAYOUT
+                Self::Vertex::LAYOUT,
+                wgpu::VertexBufferLayout {
+                    array_stride: std::mem::size_of::<Instance>() as wgpu::BufferAddress,
+                    step_mode: wgpu::VertexStepMode::Instance,
+                    attributes: &wgpu::vertex_attr_array![
+                        2 => Float32x3, 3 => Float32x3, 4 => Uint32
+                    ]
+                }
             ],
             &[
                 &e.camera.bgl,
-                &Material::bind_group_layout(&e.device)
+                &engine::utils::bgls::texture_array(&e.device, 1)
             ]
         ))
     }
 }
-impl ObjectRender for Shader {}
+impl InstancesRenderer for Shader {}

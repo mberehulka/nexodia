@@ -1,17 +1,15 @@
-[profile.release]
-opt-level = 3
-codegen-units = 1
-lto = true
-panic = "abort"
-strip = true
-
-[workspace.dependencies]
-winit = "0.28.6"
-wgpu = "0.17.0"
-bytemuck = { version = "1.13.1", features = ["derive"] }
-zstd = "0.12.4"
+[workspace.package]
+edition = "2021"
+rust-version = "1.72"
+keywords = ["rust","3d","game","wgpu","mmo","rpg"]
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/muriel-guedes/nexodia"
+repository = "https://github.com/muriel-guedes/nexodia"
+version = "1.0.0"
+authors = ["Muriel Guedes Pucci Berehulka"]
 
 [workspace]
+resolver = "2"
 members = [
     "engine",
     "compiler",
@@ -19,3 +17,30 @@ members = [
     "math",
     "tests"
 ]
+
+[workspace.dependencies]
+winit = "0.28.6"
+wgpu = { version = "0.17.0", default-features = false, features = [] }
+bytemuck = { version = "1.13.1", features = ["derive"] }
+zstd = "0.12.4"
+num_cpus = "1.16.0"
+serde = { version = "1.0.174", default_features = false, features = ["derive"] }
+serde_json = "1.0.103"
+gltf = "1.2.0"
+image = "0.24.7"
+pollster = { version = "0.3.0", default-features = false }
+log = "0.4.19"
+backtrace = "0.3.68"
+chrono = "0.4.26"
+native-dialog = "0.6.4"
+spin_sleep = "1.1.1"
+wgpu_text = "0.8.3"
+cgmath = "0.18.0"
+paste = "1.0.14"
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = true
+panic = "abort"
+strip = true

@@ -360,7 +360,7 @@ checksum = "bf43edc576402991846b093a7ca18a3477e0ef9c588cde84964b5d3e43016642"
 
 [[package]]
 name = "compiler"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "gltf",
  "image",
@@ -535,7 +535,7 @@ checksum = "a26ae43d7bcc3b814de94796a5e736d4029efb0ee900c12e2d54c993ad1a1e07"
 
 [[package]]
 name = "engine"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "backtrace",
  "bytemuck",
@@ -1080,7 +1080,7 @@ dependencies = [
 
 [[package]]
 name = "math"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bytemuck",
  "paste",
@@ -1243,7 +1243,7 @@ dependencies = [
 
 [[package]]
 name = "nexodia"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "bytemuck",
  "engine",
@@ -1901,7 +1901,7 @@ dependencies = [
 
 [[package]]
 name = "tests"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "cgmath",
  "engine",

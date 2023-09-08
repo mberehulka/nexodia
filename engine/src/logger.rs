@@ -60,10 +60,10 @@ impl log::Log for Logger {
     fn log(&self, record: &log::Record) {
         let module = record.module_path().unwrap_or_default();
 
-        if let Level::Info = record.level() {
-            if module.starts_with("wgpu") {
-                return
-            }
+        match record.level() {
+            Level::Info => if module.starts_with("wgpu") { return }
+            Level::Warn => if module.starts_with("wgpu_hal::auxil::dxgi::exception") { return }
+            _ => {}
         }
         
         let msg = if let Level::Warn | Level::Error = record.level() {

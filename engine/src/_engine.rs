@@ -27,7 +27,7 @@ impl Engine {
         Logger::new();
         let event_loop = EventLoop::new();
         let window = new_window(&event_loop);
-        let instance = Instance::new(wgpu::InstanceDescriptor::default());
+        let instance = new_instance();
         let surface = unsafe { instance.create_surface(&window) }.unwrap();
         let adapter = new_adapter(&instance, &surface);
         let (device, queue) = new_device(&adapter);
@@ -53,6 +53,7 @@ impl Engine {
     }
     pub fn start(&'static self, event_loop: EventLoop<()>) -> ! {
         event_loop.run(move |event, _, control_flow| {
+            if self.exit.load(std::sync::atomic::Ordering::Relaxed) { return *control_flow = ControlFlow::Exit }
             let event = if let Some(v) = event.to_static() { v } else { return };
             let threads = self.scripts.threads.lock().unwrap();
             for thread in threads.values() {
@@ -87,13 +88,11 @@ impl Engine {
                 }
                 _ => {}
             }
-            if self.exit.load(std::sync::atomic::Ordering::Relaxed) {
-                *control_flow = ControlFlow::Exit
-            }
         })
     }
     pub fn resize(&self, new_size: PhysicalSize<u32>) {
         if new_size.width == 0 || new_size.height == 0 { return }
+        self.instance.poll_all(true);
         let mut surface_config = self.surface_config.lock().unwrap();
         surface_config.width = new_size.width;
         surface_config.height = new_size.height;
@@ -102,5 +101,11 @@ impl Engine {
     }
     pub fn exit(&self) {
         self.exit.store(true, std::sync::atomic::Ordering::Relaxed)
+    }
+}
+
+impl Drop for Engine {
+    fn drop(&mut self) {
+        
     }
 }
