@@ -43,3 +43,6 @@ These are the available settings:
     "pixel_opacity": true
 }
 ```
+
+## License
+Feel free to use the code as you want.
