@@ -1,8 +1,8 @@
 # Nexodia
-![Static Badge](https://img.shields.io/badge/Windows-%E2%9C%94-green?logo=windows&logoColor=white)
-![Static Badge](https://img.shields.io/badge/Linux-%E2%9A%99-blue?logo=linux&logoColor=white)
-![Static Badge](https://img.shields.io/badge/Mac-%E2%9C%96-red?logo=apple&logoColor=white)
-![Static Badge](https://img.shields.io/badge/Android-%E2%9C%96-red?logo=android&logoColor=white)
+![Static Badge](https://img.shields.io/badge/Windows-%E2%9C%94-green?logo=windows&logoColor=white&link=http://a.com/)
+![Static Badge](https://img.shields.io/badge/Linux-%E2%9A%99-blue?logo=linux&logoColor=white&link=http://a.com/)
+![Static Badge](https://img.shields.io/badge/Mac-%E2%9C%96-red?logo=apple&logoColor=white&link=http://a.com/)
+![Static Badge](https://img.shields.io/badge/Android-%E2%9C%96-red?logo=android&logoColor=white&link=http://a.com/)
 
 An 3D MMO RPG written in Rust using the [WGPU](https://wgpu.rs/) crate.
 
