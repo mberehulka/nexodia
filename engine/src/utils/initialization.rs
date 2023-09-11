@@ -1,5 +1,5 @@
 use wgpu::{Instance, Adapter, Device, Queue, Surface, Features, Dx12Compiler};
-use winit::{event_loop::EventLoop, window::{Window, WindowBuilder}, dpi::{PhysicalSize, PhysicalPosition, LogicalPosition}};
+use winit::{event_loop::EventLoop, window::{Window, WindowBuilder}, dpi::{PhysicalSize, PhysicalPosition}};
 
 use crate::Engine;
 
