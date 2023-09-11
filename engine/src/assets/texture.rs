@@ -2,7 +2,7 @@ use std::{path::Path, sync::Arc, time::Instant};
 
 use wgpu::{
     Extent3d, TextureDimension, TextureFormat, TextureViewDescriptor, SamplerDescriptor,
-    AddressMode, FilterMode, CompareFunction, TextureView, Sampler, Device, TextureDescriptor, BindGroup
+    AddressMode, FilterMode, CompareFunction, TextureView, Sampler, Device, TextureDescriptor, BindGroup, SurfaceConfiguration
 };
 
 use crate::{Engine, Image};
@@ -122,12 +122,12 @@ pub struct DepthTexture {
     pub sampler: Sampler
 }
 impl DepthTexture {
-    pub fn new(device: &Device, width: u32, height: u32) -> Self {
+    pub fn new(device: &Device, surface_config: &SurfaceConfiguration) -> Self {
         let texture = device.create_texture(&TextureDescriptor {
             label: None,
             size: Extent3d {
-                width,
-                height,
+                width: surface_config.width,
+                height: surface_config.height,
                 depth_or_array_layers: 1
             },
             mip_level_count: 1,
@@ -157,5 +157,43 @@ impl DepthTexture {
             view,
             sampler
         }
+    }
+}
+impl Engine {
+    pub fn new_depth_texture(&self) -> DepthTexture {
+        DepthTexture::new(&self.device, &self.surface_config.lock().unwrap())
+    }
+}
+
+pub struct OutputTexture {
+    pub texture: wgpu::Texture,
+    pub view: TextureView
+}
+impl OutputTexture {
+    pub fn new(device: &Device, surface_config: &SurfaceConfiguration) -> Self {
+        let texture = device.create_texture(&TextureDescriptor {
+            label: None,
+            size: Extent3d {
+                width: surface_config.width,
+                height: surface_config.height,
+                depth_or_array_layers: 1
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: surface_config.format,
+            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[]
+        });
+        let view = texture.create_view(&TextureViewDescriptor::default());
+        Self {
+            texture,
+            view
+        }
+    }
+}
+impl Engine {
+    pub fn new_output_texture(&self) -> OutputTexture {
+        OutputTexture::new(&self.device, &self.surface_config.lock().unwrap())
     }
 }

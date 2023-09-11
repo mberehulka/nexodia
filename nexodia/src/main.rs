@@ -1,22 +1,22 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::time::Instant;
-use engine::{Engine, Script, Frame, InstancesRenderer, Instances};
-use winit::event::VirtualKeyCode;
+use engine::{Engine, Script, Instances, InstancesRenderer, Frame};
+use winit::{event::VirtualKeyCode, dpi::PhysicalSize};
 
 #[macro_use]
 extern crate engine;
 
 mod camera;   use camera::*;
 mod shaders;  use shaders::*;
-mod stats;    use stats::*;
 
 pub struct Scene {
     e: &'static Engine,
+    frame: Frame,
     shaders: Shaders,
     characters: Instances<instance_t_f_pu::Shader>
 }
-impl Script for Scene {
+impl Scene {
     fn new(e: &'static Engine) -> Self {
         let tx = 5;
         let ty = 1;
@@ -25,6 +25,7 @@ impl Script for Scene {
         let space = 4.;
         Self {
             e,
+            frame: Frame::new(e, true),
             shaders: Shaders::new(e),
             characters: e.create_instances(
                 e.load_mesh("assets/mannequin/mannequin.bin"),
@@ -47,14 +48,22 @@ impl Script for Scene {
             )
         }
     }
+}
+impl Script for Scene {
     fn on_key_press(&mut self, key: VirtualKeyCode) {
         if let VirtualKeyCode::Escape = key { self.e.exit() }
     }
-    fn render(&mut self, frame: &mut Frame) {
+    fn window_resized(&mut self, _new_size: PhysicalSize<u32>) {
+        self.frame.window_resized()
+    }
+    fn update(&mut self) {
         self.characters.update(self.e);
-        let mut render_pass = frame.new_render_pass(true);
+        let mut render_pass = self.frame.new_render_pass(true);
         render_pass.set_bind_group(0, &self.e.camera.bind_group, &[]);
         self.shaders.instance_t_f_pu.render_instances(&mut render_pass, &self.characters);
+    }
+    fn render(&mut self) {
+        self.frame.render()
     }
 }
 
@@ -64,8 +73,7 @@ fn main() {
     let start = Instant::now();
     
     e.add_script(Scene::new(e));
-    e.add_script(OrbitalCamera::new(e));
-    e.add_script(Stats::new(e));
+    e.add_script(Camera::new(e));
 
     info!("Game initialized in {}ms", (Instant::now()-start).as_millis());
     

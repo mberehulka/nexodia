@@ -1,47 +1,43 @@
-use std::sync::Arc;
+use wgpu::{RenderPass, Color, CommandEncoder};
 
-use wgpu::{SurfaceTexture, TextureView, CommandEncoder, RenderPass};
-
-use crate::{Engine, DepthTexture};
+use crate::{Engine, DepthTexture, OutputTexture};
 
 pub struct Frame {
-    pub depth_texture: Arc<DepthTexture>,
-    pub output_texture: SurfaceTexture,
-    pub view: TextureView,
-    pub encoder: CommandEncoder
+    e: &'static Engine,
+    depth_texture: Option<DepthTexture>,
+    output_texture: OutputTexture,
+    encoder: Option<CommandEncoder>
 }
 impl Frame {
-    pub fn new(e: &Engine) -> Option<Self> {
-        let depth_texture = e.depth_texture.lock().unwrap().clone();
-        let output_texture = match e.surface.get_current_texture() {
-            Ok(v) => v,
-            Err(wgpu::SurfaceError::Lost) | Err(wgpu::SurfaceError::Outdated) => return None,
-            Err(e) => panic!("Error getting current surface texture: {}", e)
-        };
-        let view = output_texture.texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let encoder = e.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
-        Some(Self {
-            depth_texture,
-            output_texture,
-            view,
-            encoder
-        })
+    pub fn new(e: &'static Engine, depth: bool) -> Self {
+        Self {
+            e,
+            depth_texture: if depth { Some(e.new_depth_texture()) } else { None },
+            output_texture: e.new_output_texture(),
+            encoder: Some(e.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default()))
+        }
     }
-    #[inline(always)]
-    pub fn new_render_pass(&mut self, depth: bool) -> RenderPass {
-        self.encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+    pub fn window_resized(&mut self) {
+        if let Some(depth_texture) = &mut self.depth_texture {
+            *depth_texture = self.e.new_depth_texture()
+        }
+        self.output_texture = self.e.new_output_texture();
+        self.encoder = Some(self.e.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default()))
+    }
+    pub fn new_render_pass(&mut self, clear: bool) -> RenderPass<'_> {
+        self.encoder.as_mut().unwrap().begin_render_pass(&wgpu::RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &self.view,
+                view: &self.output_texture.view,
                 resolve_target: None,
                 ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Load,
+                    load: if clear { wgpu::LoadOp::Clear(Color::BLACK) } else { wgpu::LoadOp::Load },
                     store: true
                 }
             })],
-            depth_stencil_attachment: if depth {
+            depth_stencil_attachment: if let Some(depth_texture) = &self.depth_texture {
                 Some(wgpu::RenderPassDepthStencilAttachment {
-                    view: &self.depth_texture.view,
+                    view: &depth_texture.view,
                     depth_ops: Some(wgpu::Operations {
                         load: wgpu::LoadOp::Clear(1.),
                         store: true
@@ -52,5 +48,29 @@ impl Frame {
                 None
             }
         })
+    }
+    pub fn render(&mut self) {
+        let output_texture = if let Ok(v) = self.e.surface.get_current_texture() { v } else { return };
+        assert!(output_texture.texture.size() == self.output_texture.texture.size());
+        let mut encoder = if let Some(v) = self.encoder.replace(
+            self.e.device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default())
+        ) { v } else { return };
+        encoder.copy_texture_to_texture(
+            wgpu::ImageCopyTextureBase {
+                texture: &self.output_texture.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                aspect: wgpu::TextureAspect::All
+            },
+            wgpu::ImageCopyTextureBase {
+                texture: &output_texture.texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                aspect: wgpu::TextureAspect::All
+            },
+            output_texture.texture.size()
+        );
+        self.e.queue.submit(std::iter::once(encoder.finish()));
+        output_texture.present();
     }
 }

@@ -1,23 +1,22 @@
-use std::{sync::{Mutex, atomic::AtomicBool, Arc}, collections::HashSet};
+use std::sync::{Mutex, atomic::AtomicBool};
 use wgpu::{Instance, Surface, Adapter, Device, Queue, SurfaceConfiguration};
 use winit::{
-    event::{Event, WindowEvent, VirtualKeyCode, ElementState, KeyboardInput},
+    event::{Event, WindowEvent, ElementState, KeyboardInput},
     event_loop::{ControlFlow, EventLoop}, window::Window, dpi::PhysicalSize
 };
 
-use crate::{Camera, Logger, Time, DepthTexture, Frame, utils::initialization::*, Scripts};
+use crate::{Camera, Logger, Time, utils::{initialization::*, pressed_keys::PressedKeys}, Scripts};
 
 pub struct Engine {
     pub window: Window,
     pub instance: Instance,
-    pub surface: Surface,
     pub adapter: Adapter,
     pub device: Device,
     pub queue: Queue,
-    pub exit: AtomicBool,
+    pub surface: Surface,
     pub surface_config: Mutex<SurfaceConfiguration>,
-    pub depth_texture: Mutex<Arc<DepthTexture>>,
-    pub pressed: Mutex<HashSet<VirtualKeyCode>>,
+    pub exit: AtomicBool,
+    pub pressed_keys: PressedKeys,
     pub camera: Camera,
     pub time: Time,
     pub scripts: Scripts
@@ -32,19 +31,17 @@ impl Engine {
         let adapter = new_adapter(&instance, &surface);
         let (device, queue) = new_device(&adapter);
         let surface_config = configure_surface(window.inner_size(), &device, &adapter, &surface);
-        let depth_texture = DepthTexture::new(&device, surface_config.width, surface_config.height);
         let camera = Camera::new(&device);
         let s = Self {
             window,
             instance: instance,
             surface,
-            adapter: adapter,
             device,
             queue,
-            exit: Default::default(),
             surface_config: surface_config.into(),
-            depth_texture: Mutex::new(Arc::new(depth_texture)),
-            pressed: Default::default(),
+            adapter: adapter,
+            exit: Default::default(),
+            pressed_keys: Default::default(),
             camera,
             time: Time::new(),
             scripts: Default::default()
@@ -52,41 +49,31 @@ impl Engine {
         (event_loop, Box::leak(Box::new(s)))
     }
     pub fn start(&'static self, event_loop: EventLoop<()>) -> ! {
+        self.window.set_visible(true);
         event_loop.run(move |event, _, control_flow| {
             if self.exit.load(std::sync::atomic::Ordering::Relaxed) { return *control_flow = ControlFlow::Exit }
             let event = if let Some(v) = event.to_static() { v } else { return };
             let threads = self.scripts.threads.lock().unwrap();
-            for thread in threads.values() {
-                thread.send(crate::ThreadEvent::Event(event.clone()))
-            }
             match event {
                 Event::WindowEvent { event: WindowEvent::KeyboardInput { input: KeyboardInput {
                     state: ElementState::Pressed, virtual_keycode: Some(code), ..
-                }, .. }, .. } => {
-                    self.pressed.lock().unwrap().insert(code);
-                },
+                }, .. }, .. } =>
+                    self.pressed_keys.set(code, true),
                 Event::WindowEvent { event: WindowEvent::KeyboardInput { input: KeyboardInput {
                     state: ElementState::Released, virtual_keycode: Some(code), ..
-                }, .. }, .. } => {
-                    self.pressed.lock().unwrap().remove(&code);
-                },
+                }, .. }, .. } =>
+                    self.pressed_keys.set(code, false),
                 Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => self.exit(),
                 Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } => self.resize(new_size),
-                Event::MainEventsCleared => self.window.request_redraw(),
-                Event::RedrawRequested(_) => {
+                Event::MainEventsCleared => {
                     self.time.update();
-                    if let Some(mut frame) = Frame::new(self) {
-                        for thread in threads.values() {
-                            thread.wait()
-                        }
-                        for thread in threads.values() {
-                            thread.script.lock().unwrap().render(&mut frame)
-                        }
-                        self.queue.submit(std::iter::once(frame.encoder.finish()));
-                        frame.output_texture.present()
-                    }
-                }
+                    self.window.request_redraw()
+                },
+                Event::RedrawRequested(_) => for thread in threads.values() { thread.wait() }
                 _ => {}
+            }
+            for thread in threads.values() {
+                thread.send(crate::ThreadEvent::Event(event.clone()))
             }
         })
     }
@@ -97,7 +84,6 @@ impl Engine {
         surface_config.width = new_size.width;
         surface_config.height = new_size.height;
         self.surface.configure(&self.device, &surface_config);
-        *self.depth_texture.lock().unwrap() = Arc::new(DepthTexture::new(&self.device, surface_config.width, surface_config.height));
     }
     pub fn exit(&self) {
         self.exit.store(true, std::sync::atomic::Ordering::Relaxed)

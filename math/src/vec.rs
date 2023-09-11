@@ -1,4 +1,4 @@
-use std::ops::{Sub, Add, Mul, Neg};
+use std::ops::{Sub, Add, Mul, Neg, MulAssign, AddAssign, SubAssign, DivAssign};
 use super::MutF32;
 
 macro_rules! strip_plus {
@@ -105,6 +105,26 @@ macro_rules! vec {
                     Self {$(
                         $field: self.$field + rhs.$field
                     ),* }
+                }
+            }
+            impl MulAssign for $name {
+                fn mul_assign(&mut self, rhs: Self) {
+                    $(self.$field *= rhs.$field;)*
+                }
+            }
+            impl AddAssign for $name {
+                fn add_assign(&mut self, rhs: Self) {
+                    $(self.$field += rhs.$field;)*
+                }
+            }
+            impl SubAssign for $name {
+                fn sub_assign(&mut self, rhs: Self) {
+                    $(self.$field -= rhs.$field;)*
+                }
+            }
+            impl DivAssign for $name {
+                fn div_assign(&mut self, rhs: Self) {
+                    $(self.$field /= rhs.$field;)*
                 }
             }
             impl Mul<f32> for $name {

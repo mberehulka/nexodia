@@ -1,5 +1,5 @@
 use std::time::Instant;
-use engine::{Engine, Script, Reader};
+use engine::{Engine, Reader, Script};
 use wgpu_text::{BrushBuilder, glyph_brush::{Section, Layout, VerticalAlign, ab_glyph::{FontArc, FontVec}, Text, HorizontalAlign}, TextBrush};
 
 pub struct Stats {
@@ -7,8 +7,8 @@ pub struct Stats {
     pub brush: TextBrush,
     pub last_time: Instant
 }
-impl Script for Stats {
-    fn new(e: &'static Engine) -> Self {
+impl Stats {
+    pub fn new(e: &'static Engine) -> Self {
         let font = Reader::new("assets/fonts/Roboto/Roboto-Regular.bin");
         let font = FontArc::new(FontVec::try_from_vec(font.get_rest()).unwrap());
         let ws = e.window.inner_size();
@@ -23,6 +23,8 @@ impl Script for Stats {
             last_time: Instant::now()
         }
     }
+}
+impl Script for Stats {
     fn update(&mut self) {
         let now = Instant::now();
         if (now - self.last_time).as_secs_f32() <= 1. / 10. { return }

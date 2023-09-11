@@ -1,9 +1,11 @@
 use wgpu::{Instance, Adapter, Device, Queue, Surface, Features, Dx12Compiler};
-use winit::{event_loop::EventLoop, window::{Window, WindowBuilder}, dpi::{PhysicalSize, PhysicalPosition}};
+use winit::{event_loop::EventLoop, window::{Window, WindowBuilder}, dpi::{PhysicalSize, PhysicalPosition, LogicalPosition}};
+
+use crate::Engine;
 
 pub fn new_instance() -> wgpu::Instance {
     wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::DX12,
+        backends: wgpu::Backends::VULKAN,
         dx12_shader_compiler: Dx12Compiler::Fxc
     })
 }
@@ -29,7 +31,7 @@ pub fn new_adapter(instance: &Instance, surface: &Surface) -> Adapter {
         compatible_surface: Some(&surface),
         force_fallback_adapter: false
     })).unwrap();
-    let adapters = instance.enumerate_adapters(wgpu::Backends::DX12)
+    let adapters = instance.enumerate_adapters(wgpu::Backends::VULKAN)
         .filter(|adapter| {
             let info = adapter.get_info();
             let supported = adapter.is_surface_supported(surface);
@@ -54,11 +56,11 @@ pub fn configure_surface(
 ) -> wgpu::SurfaceConfiguration {
     let caps = surface.get_capabilities(adapter);
     let config = wgpu::SurfaceConfiguration {
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_DST,
         format: caps.formats.into_iter().find(|v| v.is_srgb()).unwrap(),
         width: window_size.width,
         height: window_size.height,
-        present_mode: wgpu::PresentMode::AutoVsync,
+        present_mode: wgpu::PresentMode::AutoNoVsync,
         alpha_mode: caps.alpha_modes.into_iter().next().unwrap(),
         view_formats: vec![]
     };
@@ -77,15 +79,18 @@ pub fn new_window(event_loop: &EventLoop<()>) -> Window {
             width: 100,
             height: 100
         })
+        .with_visible(false)
         .build(event_loop).unwrap();
-    // center window
-    if let Some(monitor) = w.current_monitor() {
-        let ms = monitor.size();
-        let ws = w.inner_size();
-        w.set_outer_position(PhysicalPosition {
-            x: ((ms.width - ws.width) / 2),
+    w
+}
+
+impl Engine {
+    pub fn center_window(&self) {
+        let ms = self.window.current_monitor().unwrap().size();
+        let ws = self.window.inner_size();
+        self.window.set_outer_position(PhysicalPosition {
+            x: (ms.width - ws.width) / 2,
             y: (ms.height - ws.height) / 2
         })
     }
-    w
 }
