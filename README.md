@@ -5,7 +5,7 @@ An 3D MMO RPG written in Rust using the [WGPU](https://wgpu.rs/) crate.
 Currently aiming only for Windows, but Linux and Android support is planned.
 
 ### 🚀 Running
-```console
+```shell
 ~$ blender --background --python compiler.py
 ~$ cargo run --bin compiler
 ~$ cargo run --bin nexodia
