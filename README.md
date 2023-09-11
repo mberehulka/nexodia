@@ -31,11 +31,11 @@ Settings files should have the settings.json name and will apply to its folder a
 These are the available settings:
 ```json
 {
-    "compression_level": 12, // ZSTD compression level, from 1 to 22
-    // Mesh settings
+    "compression_level": 12, /* ZSTD compression level, from 1 to 22 */
+    /* Mesh settings */
     "uv": true,
     "normal": true,
-    // Texture settings
+    /* Texture settings */
     "pixel_opacity": true
 }
 ```
