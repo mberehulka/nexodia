@@ -23,7 +23,7 @@ cargo run --bin nexodia
 
 ## Compiler
 
-### 📁 Organization.
+### 📁 Assets
 - All assets should be in the [assets](./assets/) folder.
 - Compiled binaries go to the same folder as the source, using the <b>.bin</b> extension.
 - The compiler binary will compile all <b>.glb</b> and <b>.gltf</b> files as meshes, and all <b>.png</b>, <b>.jpg</b> and <b>.jpeg</b> files as textures.
