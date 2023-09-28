@@ -5,7 +5,7 @@ use crate::{settings::Settings, writer::Writer};
 
 pub fn compile(path: &Path, settings: &Settings) -> Vec<u8> {
     let mut w = Writer::new(b'I');
-    w.write_byte(settings.pixel_type as u8);
+    w.write_u8(settings.pixel_type as u8);
     let img = Cursor::new(std::fs::read(path).unwrap());
     let img = Reader::new(img).with_guessed_format().unwrap().decode().unwrap();
     w.write_u32(img.width());

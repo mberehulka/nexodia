@@ -1,5 +1,5 @@
 use std::f32::consts::{FRAC_PI_2, PI};
-use winit::event::{VirtualKeyCode, WindowEvent, Event};
+use winit::event::{WindowEvent, Event};
 use engine::{Script, Engine, CameraBinding, Vec3, Mat4x4, Vec2};
 
 const CAM_MAX_ANG: f32 = FRAC_PI_2 - 0.1;
@@ -50,17 +50,17 @@ impl Script for Camera {
         self.rotation.y += self.cursor_movement.x * self.cursor_speed.y * s;
         self.rotation.x = (self.rotation.x - self.cursor_speed.x * self.cursor_movement.y * s).min(CAM_MAX_ANG).max(-CAM_MAX_ANG);
 
-        if self.e.pressed_keys[VirtualKeyCode::E] { self.translation.y += s }
-        else if self.e.pressed_keys[VirtualKeyCode::Q] { self.translation.y -= s }
+        if self.e.pressed_keys["E"] { self.translation.y += s }
+        else if self.e.pressed_keys["Q"] { self.translation.y -= s }
         
-        if self.e.pressed_keys[VirtualKeyCode::W] {
+        if self.e.pressed_keys["W"] {
             self.translation += Vec3::new(0., 0., 1.).rotate_y(self.rotation.y) * s
-        } else if self.e.pressed_keys[VirtualKeyCode::S] {
+        } else if self.e.pressed_keys["S"] {
             self.translation -= Vec3::new(0., 0., 1.).rotate_y(self.rotation.y) * s
         }
-        if self.e.pressed_keys[VirtualKeyCode::A] {
+        if self.e.pressed_keys["A"] {
             self.translation += Vec3::new(1., 0., 0.).rotate_y(self.rotation.y) * s
-        } else if self.e.pressed_keys[VirtualKeyCode::D] {
+        } else if self.e.pressed_keys["D"] {
             self.translation -= Vec3::new(1., 0., 0.).rotate_y(self.rotation.y) * s
         }
 

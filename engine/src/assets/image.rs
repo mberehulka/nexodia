@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::{path::Path, time::Instant};
 
 use crate::Reader;
 
@@ -11,9 +11,11 @@ pub struct Image {
 }
 impl Image {
     pub fn new(path: impl AsRef<Path>) -> Image {
-        let mut r = Reader::new(path);
-        assert!(r.read_byte() == b'I');
-        let pixel_opacity = r.read_byte() == 1;
+        let start = Instant::now();
+
+        let mut r = Reader::new(&path);
+        assert!(r.read_u8() == b'I');
+        let pixel_opacity = r.read_u8() == 1;
         let width = r.read_u32();
         let height = r.read_u32();
         let pixels = if pixel_opacity {
@@ -29,6 +31,9 @@ impl Image {
             res
         };
         assert!(pixels.len() == (width * height * 4)as usize);
+
+        info!("Image '{}' loaded in: {}ms", path.as_ref().display(), (Instant::now() - start).as_millis());
+        
         Image {
             pixel_opacity,
             width,

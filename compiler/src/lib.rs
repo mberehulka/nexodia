@@ -1,8 +1,8 @@
-use std::{path::{PathBuf, Path}, sync::{mpsc::{channel, Sender}, Arc, Mutex}, io::{Write, Cursor}};
+use std::{path::{PathBuf, Path}, sync::{mpsc::{channel, Sender}, Arc, Mutex}, io::{Write, Cursor}, time::Instant};
 
 mod settings;  use settings::*;
 mod writer;
-mod gl;
+mod mesh;
 mod image;
 
 pub fn compile(main_path: PathBuf) {
@@ -47,20 +47,23 @@ fn dir_loop(dir: &Path, tx: &Sender<Option<(PathBuf, Settings)>>, mut settings: 
 }
 
 fn compile_file(path: PathBuf, settings: Settings) {
+    let start = Instant::now();
     let bytes = match path.extension().unwrap().to_str().unwrap() {
-        "gltf" | "glb" => gl::compile(&path, &settings),
+        "gltf" | "glb" => mesh::compile(&path, &settings),
         "jpg" | "jpeg" | "png" => image::compile(&path, &settings),
         "ttf" => std::fs::read(&path).unwrap(),
         _ => return
     };
+    let size = size::Size::from_bytes(bytes.len());
     std::fs::OpenOptions::new()
         .write(true)
         .read(true)
         .append(false)
         .truncate(true)
         .create(true)
-        .open(crate::get_compiled_file_path(path)).unwrap()
+        .open(crate::get_compiled_file_path(path.clone())).unwrap()
         .write_all(&zstd::encode_all(Cursor::new(bytes), settings.compression_level).unwrap()).unwrap();
+    println!("{} compiled in {} seconds, with {}", path.display(), (Instant::now()-start).as_secs_f32(), size);
 }
 
 fn get_compiled_file_path(mut path: PathBuf) -> PathBuf {

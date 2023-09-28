@@ -14,7 +14,7 @@
         },
         {
             "label": "B",
-            "command": "cargo run --bin compiler --release",
+            "command": "./compiler/compile.ssh",
             "type": "shell",
             "presentation": {
                 "reveal": "always",

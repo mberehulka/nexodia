@@ -20,11 +20,16 @@ macro_rules! pressed_keys {
             fn index(&self, index: VirtualKeyCode) -> &Self::Output {
                 if match index {
                     $(VirtualKeyCode::$key => self.$key.load(Relaxed)),*
-                } {
-                    &true
-                } else {
-                    &false
-                }
+                } { &true } else { &false }
+            }
+        }
+        impl Index<&'static str> for PressedKeys {
+            type Output = bool;
+            fn index(&self, index: &'static str) -> &Self::Output {
+                if match index {
+                    $(stringify!($key) => self.$key.load(Relaxed),)*
+                    _ => panic!("Key '{index}' not found")
+                } { &true } else { &false }
             }
         }
     };

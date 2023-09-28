@@ -37,6 +37,7 @@ spin_sleep = "1.1.1"
 wgpu_text = "0.8.3"
 cgmath = "0.18.0"
 paste = "1.0.14"
+size = "0.4.1"
 
 [profile.release]
 opt-level = 3

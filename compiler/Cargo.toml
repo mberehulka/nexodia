@@ -16,3 +16,6 @@ serde_json.workspace = true
 gltf.workspace = true
 image.workspace = true
 zstd.workspace = true
+size.workspace = true
+bytemuck.workspace = true
+math.path = "../math"

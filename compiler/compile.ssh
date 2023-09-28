@@ -1,0 +1,12 @@
+{
+    cargo run --bin compiler --release
+    wait
+}&
+{
+    blender --background --python ./compiler/compiler.py | grep -e "^assets" -e "finished"
+    wait
+}&
+
+wait
+
+# read -p "Compilation finished in $SECONDS seconds, press enter to exit..."

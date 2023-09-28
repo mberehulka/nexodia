@@ -10,8 +10,8 @@ Currently aiming only for Windows, but Linux and Android support is planned.
 
 ### 🚀 Running
 ```shell
-~$ blender --background --python compiler.py
-~$ cargo run --bin compiler
+~$ blender --background --python compiler/install_deps.py
+~$ ./compiler/compile.ssh
 ~$ cargo run --bin nexodia
 ```
 
@@ -37,10 +37,14 @@ These are the available settings:
 {
     "compression_level": 12, /* ZSTD compression level, from 1 to 22 */
     /* Mesh settings */
-    "uv": true,
-    "normal": true,
+    "uv": false,
+    "normal": false,
+    "joint": false,
+    "skeleton": true,
+    /* Mesh settings */
+    "skeleton_apply_ibm": true,
     /* Texture settings */
-    "pixel_opacity": true
+    "pixel_opacity": false
 }
 ```
 

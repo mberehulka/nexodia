@@ -5,7 +5,7 @@ use crate::Engine;
 
 pub fn new_instance() -> wgpu::Instance {
     wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::VULKAN,
+        backends: wgpu::Backends::all() - wgpu::Backends::GL,
         dx12_shader_compiler: Dx12Compiler::Fxc
     })
 }
@@ -13,7 +13,10 @@ pub fn new_instance() -> wgpu::Instance {
 pub fn new_device(adapter: &Adapter) -> (Device, Queue) {
     let mut features = adapter.features();
     features.remove(Features::MAPPABLE_PRIMARY_BUFFERS);
+    features.insert(Features::PARTIALLY_BOUND_BINDING_ARRAY);
     features.insert(Features::TEXTURE_BINDING_ARRAY);
+    features.insert(Features::BUFFER_BINDING_ARRAY);
+    features.insert(Features::STORAGE_RESOURCE_BINDING_ARRAY);
     println!("Using device features: {features:#?}");
     pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
@@ -81,6 +84,7 @@ pub fn new_window(event_loop: &EventLoop<()>) -> Window {
         })
         .with_visible(false)
         .build(event_loop).unwrap();
+    w.focus_window();
     w
 }
 

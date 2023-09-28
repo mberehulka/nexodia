@@ -2,5 +2,7 @@
     "compression_level": 12,
     "uv": false,
     "normal": false,
+    "skeleton": false,
+    "skelton_apply_ibm": false,
     "pixel_opacity": false
 }

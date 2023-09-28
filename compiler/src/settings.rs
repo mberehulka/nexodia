@@ -7,6 +7,9 @@ pub struct Settings {
     pub compression_level: i32,
     pub uv: bool,
     pub normal: bool,
+    pub joint: bool,
+    pub skeleton: bool,
+    pub skelton_apply_ibm: bool,
     pub pixel_type: bool
 }
 impl Settings {

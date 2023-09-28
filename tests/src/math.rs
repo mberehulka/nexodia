@@ -1,5 +1,5 @@
-use cgmath::Matrix4;
-use math::Mat4x4;
+use cgmath::{Matrix4, SquareMatrix, Vector4};
+use math::{Mat4x4, Vec4};
 
 #[test]
 fn math() {
@@ -16,8 +16,23 @@ fn math() {
     assert!(compare(proj_1, proj_2));
 
     assert!(compare(view_1 * proj_1, view_2 * proj_2));
+
+    assert!(Mat4x4::from(<[[f32;4];4]>::from(proj_2)) == proj_2);
+
+    assert!(compare(proj_1.invert().unwrap(), proj_2.inverted().unwrap()));
+
+    let v = [1., 0.5, 2., 3.12312];
+    let v1 = Vector4::from(v);
+    let v2 = Vec4::from(v);
+    assert!(compare_v(proj_1 * v1, proj_2 * v2));
 }
 
+fn compare_v(a: Vector4<f32>, b: Vec4) -> bool {
+    let a: [f32;4] = a.into();
+    let b: [f32;4] = b.into();
+    if a != b { println!("\n{:?}\n{:?}\n", a, b) }
+    a == b
+}
 fn compare(a: Matrix4<f32>, b: Mat4x4) -> bool {
     let a: [[f32;4];4] = a.into();
     let b: [[f32;4];4] = b.into();

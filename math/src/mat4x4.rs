@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use crate::{Vec4, Vec3};
+use crate::{Vec4, Vec3, Mat3x3, det_sub_proc_unsafe};
 
 #[repr(C)]
 #[derive(Debug, Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
@@ -47,6 +47,47 @@ impl Mat4x4 {
             w: Vec4::new(0., 0., (2. * far * near) / (near - far), 0.)
         }
     }
+    #[inline(always)]
+    pub fn transposed(self) -> Self {
+        Self {
+            x: Vec4::new(self.x.x, self.y.x, self.z.x, self.w.x),
+            y: Vec4::new(self.x.y, self.y.y, self.z.y, self.w.y),
+            z: Vec4::new(self.x.z, self.y.z, self.z.z, self.w.z),
+            w: Vec4::new(self.x.w, self.y.w, self.z.w, self.w.w)
+        }
+    }
+    #[inline(always)]
+    pub fn determinant(self) -> f32 {
+        unsafe { det_sub_proc_unsafe(self, 1, 2, 3) }
+            .dot(Vec4::new(self.x.x, self.y.x, self.z.x, self.w.x))
+    }
+    #[inline(always)]
+    pub fn inverted(self) -> Option<Self> {
+        let det = self.determinant();
+        if det == 0. {
+            None
+        } else {
+            let inv_det = 1. / det;
+            let t = self.transposed();
+            let cf = |i, j| {
+                let mat = match i {
+                    0 => Mat3x3::new(t.y.truncate_n(j), t.z.truncate_n(j), t.w.truncate_n(j)),
+                    1 => Mat3x3::new(t.x.truncate_n(j), t.z.truncate_n(j), t.w.truncate_n(j)),
+                    2 => Mat3x3::new(t.x.truncate_n(j), t.y.truncate_n(j), t.w.truncate_n(j)),
+                    3 => Mat3x3::new(t.x.truncate_n(j), t.y.truncate_n(j), t.z.truncate_n(j)),
+                    _ => panic!("out of range")
+                };
+                let sign = if (i + j) & 1 == 1 { -1. } else { 1. };
+                mat.determinant() * sign * inv_det
+            };
+            Some(Mat4x4::from([
+                [cf(0, 0), cf(0, 1), cf(0, 2), cf(0, 3)],
+                [cf(1, 0), cf(1, 1), cf(1, 2), cf(1, 3)],
+                [cf(2, 0), cf(2, 1), cf(2, 2), cf(2, 3)],
+                [cf(3, 0), cf(3, 1), cf(3, 2), cf(3, 3)]
+            ]))
+        }
+    }
 }
 
 impl Mul<Mat4x4> for Mat4x4 {
@@ -58,6 +99,26 @@ impl Mul<Mat4x4> for Mat4x4 {
             self.x*rhs.z.x + self.y*rhs.z.y + self.z*rhs.z.z + self.w*rhs.z.w,
             self.x*rhs.w.x + self.y*rhs.w.y + self.z*rhs.w.z + self.w*rhs.w.w,
         )
+    }
+}
+impl From<[f32;16]> for Mat4x4 {
+    fn from(v: [f32;16]) -> Self {
+        Self::new(
+            Vec4::from([v[0], v[1], v[2], v[3]]),
+            Vec4::from([v[4], v[5], v[6], v[7]]),
+            Vec4::from([v[8], v[9], v[10], v[11]]),
+            Vec4::from([v[12], v[13], v[14], v[15]])
+        )
+    }
+}
+impl From<Mat4x4> for [f32;16] {
+    fn from(v: Mat4x4) -> Self {
+        [
+            v.x.x, v.x.y, v.x.z, v.x.w,
+            v.y.x, v.y.y, v.y.z, v.y.w,
+            v.z.x, v.z.y, v.z.z, v.z.w,
+            v.w.x, v.w.y, v.w.z, v.w.w
+        ]
     }
 }
 impl From<[[f32;4];4]> for Mat4x4 {
@@ -86,5 +147,15 @@ impl PartialEq<Mat4x4> for Mat4x4 {
         self.y == other.y &&
         self.z == other.z &&
         self.w == other.w
+    }
+}
+
+impl Mul<Vec4> for Mat4x4 {
+    type Output = Vec4;
+    fn mul(self, rhs: Vec4) -> Self::Output {
+        self.x * rhs.x +
+        self.y * rhs.y +
+        self.z * rhs.z +
+        self.w * rhs.w
     }
 }

@@ -63,6 +63,12 @@ macro_rules! vec {
                 pub fn dot(self, other: Self) -> f32 {
                     strip_plus!($(+(self.$field*other.$field))+)
                 }
+                #[inline(always)]
+                pub fn mul_element_wise(self, other: Self) -> Self {
+                    Self { $(
+                        $field: self.$field * other.$field
+                    ),* }
+                }
             }
             impl From<f32> for $name {
                 fn from(v: f32) -> Self {
@@ -188,6 +194,26 @@ impl Vec3 {
             x: self.x * cos + self.y * sin,
             y: self.y * cos - self.x * sin,
             z: self.z
+        }
+    }
+    #[inline(always)]
+    pub fn extend(self) -> Vec4 {
+        Vec4::new(self.x, self.y, self.z, 1.)
+    }
+}
+impl Vec4 {
+    #[inline(always)]
+    pub fn truncate(self) -> Vec3 {
+        Vec3::new(self.x, self.y, self.z)
+    }
+    #[inline(always)]
+    pub fn truncate_n(self, n: u8) -> Vec3 {
+        match n {
+            0 => Vec3::new(self.y, self.z, self.w),
+            1 => Vec3::new(self.x, self.z, self.w),
+            2 => Vec3::new(self.x, self.y, self.w),
+            3 => Vec3::new(self.x, self.y, self.z),
+            _ => panic!("{:?} is out of range", n),
         }
     }
 }

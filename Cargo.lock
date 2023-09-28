@@ -362,11 +362,14 @@ checksum = "bf43edc576402991846b093a7ca18a3477e0ef9c588cde84964b5d3e43016642"
 name = "compiler"
 version = "1.0.0"
 dependencies = [
+ "bytemuck",
  "gltf",
  "image",
+ "math",
  "num_cpus",
  "serde",
  "serde_json",
+ "size",
  "zstd",
 ]
 
@@ -1792,6 +1795,12 @@ name = "simd-adler32"
 version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "238abfbb77c1915110ad968465608b68e869e0772622c9656714e73e5a1a522f"
+
+[[package]]
+name = "size"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9fed904c7fb2856d868b92464fc8fa597fce366edea1a9cbfaa8cb5fe080bd6d"
 
 [[package]]
 name = "slotmap"

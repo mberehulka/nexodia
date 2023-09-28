@@ -15,5 +15,6 @@ mod time;       pub use time::*;
 mod instances;  pub use instances::*;
 mod shader;     pub use shader::*;
 mod frame;      pub use frame::*;
+mod animator;   pub use animator::*;
 
 pub mod utils;

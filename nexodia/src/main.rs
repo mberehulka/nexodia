@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::time::Instant;
-use engine::{Engine, Script, Instances, InstancesRenderer, Frame};
+use engine::{Engine, Script, Instances, InstancesRenderer, Frame, Animator};
 use winit::{event::VirtualKeyCode, dpi::PhysicalSize};
 
 #[macro_use]
@@ -13,8 +13,8 @@ mod shaders;  use shaders::*;
 pub struct Scene {
     e: &'static Engine,
     frame: Frame,
-    shaders: Shaders,
-    characters: Instances<instance_t_f_pu::Shader>
+    characters_shader: shaders::character::Shader,
+    characters: Instances<character::Shader>
 }
 impl Scene {
     fn new(e: &'static Engine) -> Self {
@@ -23,20 +23,27 @@ impl Scene {
         let tz = 5;
         let size = 2.;
         let space = 4.;
+
+        let character_mesh = e.load_mesh("assets/mutant/mutant.bin");
+        let _character_animation = e.load_animation("assets/mutant/animations/walking.bin");
+        let character_material = character::Material::new(
+            Animator::new(e, &character_mesh),
+            vec![ e.load_texture("assets/mutant/textures/diffuse.bin") ]
+        );
+        let characters_shader = character_material.create_shader(e);
+        
         Self {
             e,
             frame: Frame::new(e, true),
-            shaders: Shaders::new(e),
+            characters_shader,
             characters: e.create_instances(
-                e.load_mesh("assets/mannequin/mannequin.bin"),
-                instance_t_f_pu::Material(vec![
-                    e.load_texture("assets/mannequin/textures/Ch36_1001_Diffuse.bin")
-                ]),
+                character_mesh,
+                character_material,
                 Some(
                     (0..tx).map(|x|
                         (0..ty).map(move |y|
                             (0..tz).map(move |z|
-                                instance_t_f_pu::Instance {
+                                character::Instance {
                                     translation: [(x-tx/2) as f32*space, (y-ty/2) as f32*space, (z-tz/2) as f32*space],
                                     scale: [size;3],
                                     texture_id: 0
@@ -60,7 +67,7 @@ impl Script for Scene {
         self.characters.update(self.e);
         let mut render_pass = self.frame.new_render_pass(true);
         render_pass.set_bind_group(0, &self.e.camera.bind_group, &[]);
-        self.shaders.instance_t_f_pu.render_instances(&mut render_pass, &self.characters);
+        self.characters_shader.render_instances(&mut render_pass, &self.characters);
     }
     fn render(&mut self) {
         self.frame.render()

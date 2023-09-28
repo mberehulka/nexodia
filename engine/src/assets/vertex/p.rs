@@ -8,7 +8,7 @@ impl crate::Vertex for Vertex {
         0 => Float32x3
     ];
     fn requires(_uv: bool, _normal: bool) -> bool { true }
-    fn new(i: usize, positions: &[[f32;3]], _uvs: &[[f32;2]], _normals: &[[f32;3]]) -> Self {
+    fn new(i: usize, positions: &[[f32;3]], _uvs: &[[f32;2]], _normals: &[[f32;3]], _joints: &[[u8;4]], _weights: &[[f32;4]]) -> Self {
         Self {
             position: positions[i]
         }

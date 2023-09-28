@@ -1,7 +1,8 @@
 use bytemuck::Pod;
 
-pub mod pu;
 pub mod p;
+pub mod pu;
+pub mod puj;
 
 pub trait Vertex: Default + Pod {
     const ATTRIBUTES: &'static [wgpu::VertexAttribute];
@@ -11,5 +12,5 @@ pub trait Vertex: Default + Pod {
         attributes: Self::ATTRIBUTES
     };
     fn requires(uv: bool, normal: bool) -> bool;
-    fn new(i: usize, positions: &[[f32;3]], uvs: &[[f32;2]], normals: &[[f32;3]]) -> Self;
+    fn new(i: usize, positions: &[[f32;3]], uvs: &[[f32;2]], normals: &[[f32;3]], joints: &[[u8;4]], weights: &[[f32;4]]) -> Self;
 }
