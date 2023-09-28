@@ -10,9 +10,9 @@ Currently aiming only for Windows, but Linux and Android support is planned.
 
 ### 🚀 Running
 ```shell
-~$ blender --background --python compiler/install_deps.py
-~$ ./compiler/compile.ssh
-~$ cargo run --bin nexodia
+blender --background --python compiler/install_deps.py
+./compiler/compile.ssh
+cargo run --bin nexodia
 ```
 
 ### 📑 Todo
