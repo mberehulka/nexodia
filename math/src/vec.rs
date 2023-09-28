@@ -1,4 +1,6 @@
 use std::ops::{Sub, Add, Mul, Neg, MulAssign, AddAssign, SubAssign, DivAssign};
+use bytemuck::{Pod, Zeroable};
+use bincode::{Decode, Encode};
 use super::MutF32;
 
 macro_rules! strip_plus {
@@ -43,7 +45,7 @@ macro_rules! vec {
             }
 
             #[repr(C)]
-            #[derive(Debug, Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+            #[derive(Debug, Default, Copy, Clone, Encode, Decode, Pod, Zeroable)]
             pub struct $name {
                 $( pub $field: f32 ),*
             }

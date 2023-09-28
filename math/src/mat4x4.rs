@@ -1,9 +1,11 @@
 use std::ops::Mul;
+use bincode::{Decode, Encode};
+use bytemuck::{Pod, Zeroable};
 
 use crate::{Vec4, Vec3, Mat3x3, det_sub_proc_unsafe};
 
 #[repr(C)]
-#[derive(Debug, Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Debug, Default, Copy, Clone, Encode, Decode, Pod, Zeroable)]
 pub struct Mat4x4 {
     pub x: Vec4,
     pub y: Vec4,

@@ -32,21 +32,5 @@ Currently aiming only for Windows, but Linux and Android support is planned.
 ### ⚙ Settings
 Settings files should have the settings.json name and will apply to its folder and children.
 
-These are the available settings:
-```json
-{
-    "compression_level": 12, /* ZSTD compression level, from 1 to 22 */
-    /* Mesh settings */
-    "uv": false,
-    "normal": false,
-    "joint": false,
-    "skeleton": true,
-    /* Mesh settings */
-    "skeleton_apply_ibm": true,
-    /* Texture settings */
-    "pixel_opacity": false
-}
-```
-
 ## License
 Feel free to use the code as you want.

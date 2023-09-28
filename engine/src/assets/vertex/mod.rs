@@ -11,6 +11,5 @@ pub trait Vertex: Default + Pod {
         step_mode: wgpu::VertexStepMode::Vertex,
         attributes: Self::ATTRIBUTES
     };
-    fn requires(uv: bool, normal: bool) -> bool;
     fn new(i: usize, positions: &[[f32;3]], uvs: &[[f32;2]], normals: &[[f32;3]], joints: &[[u8;4]], weights: &[[f32;4]]) -> Self;
 }

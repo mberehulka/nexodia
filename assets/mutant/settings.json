@@ -1,6 +1,6 @@
 {
-    "uv": true,
-    "joint": true,
+    "uvs": true,
+    "joints": true,
     "skeleton": true,
     "skeleton_apply_ibm": true
 }

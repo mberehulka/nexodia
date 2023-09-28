@@ -1,8 +1,10 @@
 {
     "compression_level": 12,
-    "uv": false,
-    "normal": false,
+    "uvs": false,
+    "normals": false,
+    "joints": false,
     "skeleton": false,
-    "skelton_apply_ibm": false,
-    "pixel_opacity": false
+    "skeleton_apply_ibm": false,
+    "image_opacity": false,
+    "image_scale": 0.5
 }

@@ -5,12 +5,13 @@ use serde_json::{Value, json};
 #[derive(Default, Clone, Serialize, Deserialize, Debug)]
 pub struct Settings {
     pub compression_level: i32,
-    pub uv: bool,
-    pub normal: bool,
-    pub joint: bool,
+    pub uvs: bool,
+    pub normals: bool,
+    pub joints: bool,
     pub skeleton: bool,
-    pub skelton_apply_ibm: bool,
-    pub pixel_type: bool
+    pub skeleton_apply_ibm: bool,
+    pub image_opacity: bool,
+    pub image_scale: f32
 }
 impl Settings {
     pub fn merge(&mut self, path: &Path) {

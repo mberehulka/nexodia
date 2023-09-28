@@ -17,5 +17,5 @@ gltf.workspace = true
 image.workspace = true
 zstd.workspace = true
 size.workspace = true
-bytemuck.workspace = true
+bincode.workspace = true
 math.path = "../math"

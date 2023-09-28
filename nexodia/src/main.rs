@@ -14,7 +14,8 @@ pub struct Scene {
     e: &'static Engine,
     frame: Frame,
     characters_shader: shaders::character::Shader,
-    characters: Instances<character::Shader>
+    characters: Instances<character::Shader>,
+    characters_animator: Animator
 }
 impl Scene {
     fn new(e: &'static Engine) -> Self {
@@ -25,9 +26,9 @@ impl Scene {
         let space = 4.;
 
         let character_mesh = e.load_mesh("assets/mutant/mutant.bin");
-        let _character_animation = e.load_animation("assets/mutant/animations/walking.bin");
+        let characters_animator = Animator::new(e, &character_mesh);
         let character_material = character::Material::new(
-            Animator::new(e, &character_mesh),
+            characters_animator.clone(),
             vec![ e.load_texture("assets/mutant/textures/diffuse.bin") ]
         );
         let characters_shader = character_material.create_shader(e);
@@ -52,7 +53,8 @@ impl Scene {
                         )
                     ).flatten().flatten().collect()
                 )
-            )
+            ),
+            characters_animator
         }
     }
 }
@@ -64,6 +66,7 @@ impl Script for Scene {
         self.frame.window_resized()
     }
     fn update(&mut self) {
+        self.characters_animator.update(self.e);
         self.characters.update(self.e);
         let mut render_pass = self.frame.new_render_pass(true);
         render_pass.set_bind_group(0, &self.e.camera.bind_group, &[]);

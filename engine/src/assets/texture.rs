@@ -5,7 +5,7 @@ use wgpu::{
     AddressMode, FilterMode, CompareFunction, TextureView, Sampler, Device, TextureDescriptor, BindGroup, SurfaceConfiguration
 };
 
-use crate::{Engine, Image};
+use crate::{Engine, decode};
 
 pub const DEPTH_FORMAT: TextureFormat = TextureFormat::Depth32Float;
 
@@ -45,10 +45,13 @@ impl Engine {
     pub fn load_texture(&self, path: impl AsRef<Path>) -> Texture {
         let start = Instant::now();
 
-        let image = Image::new(path.as_ref());
+        let image: compiler::Image = decode(&path);
+        let width = image.width;
+        let height = image.height;
+        
         let texture_size = wgpu::Extent3d {
-            width: image.width,
-            height: image.height,
+            width,
+            height,
             depth_or_array_layers: 1
         };
         let texture = self.device.create_texture(
@@ -70,11 +73,11 @@ impl Engine {
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All
             },
-            &image.pixels,
+            &image.get_pixels_rgba(),
             wgpu::ImageDataLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * image.width),
-                rows_per_image: Some(image.height)
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height)
             },
             texture_size
         );

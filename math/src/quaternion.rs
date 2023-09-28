@@ -1,9 +1,11 @@
 use std::ops::Mul;
+use bytemuck::{Pod, Zeroable};
+use bincode::{Decode, Encode};
 
 use crate::{Vec3, MutVec3, MutF32};
 
 #[repr(C)]
-#[derive(Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+#[derive(Default, Copy, Clone, Encode, Decode, Pod, Zeroable)]
 pub struct Quaternion {
     pub v: Vec3,
     pub s: f32

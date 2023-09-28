@@ -20,7 +20,9 @@ winit.workspace = true
 wgpu.workspace = true
 bytemuck.workspace = true
 zstd.workspace = true
+bincode.workspace = true
 math.path = "../math"
+compiler.path = "../compiler"
 
 [build-dependencies]
 compiler.path = "../compiler/"

@@ -1,7 +1,9 @@
-use math::{Mat4x4, Vec3, Quaternion};
+use std::sync::Arc;
+use compiler::Joint;
+use math::Mat4x4;
 use wgpu::{Buffer, util::DeviceExt};
 
-use crate::{Mesh, Vertex, Engine, SkeletonJoint};
+use crate::{Mesh, Vertex, Engine};
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -12,67 +14,58 @@ impl Default for AnimatorFrame {
     }
 }
 
-pub struct Joint {
+#[derive(Clone)]
+pub struct AnimatorJoint {
     pub parents: Vec<u8>,
-    pub tpose: Mat4x4,
-    pub ibm: Mat4x4,
-    translation: Option<Vec3>,
-    rotation: Option<Quaternion>,
-    scale: Option<Vec3>,
-    local_pose_cache: Option<Mat4x4>
+    pub tpose: Mat4x4
 }
-impl Joint {
-    pub fn new(sj: SkeletonJoint) -> Self {
+impl AnimatorJoint {
+    pub fn new(sj: Joint) -> Self {
         Self {
             parents: sj.parents,
-            tpose: sj.tpose,
-            ibm: sj.ibm,
-            translation: None,
-            rotation: None,
-            scale: None,
-            local_pose_cache: None
+            tpose: sj.pose
         }
     }
-    pub fn local_pose(&self, joints: &[Joint]) -> Mat4x4 {
-        match self.local_pose_cache {
-            Some(v) => v,
-            None => if let Some(parent) = self.parents.first() {
-                self.tpose * joints[*parent as usize].ibm
-            }else { self.tpose }
+    pub fn global_pose(&self, joints: &[AnimatorJoint]) -> Mat4x4 {
+        if let Some(last_parent) = self.parents.iter().last() {
+            let mut pose = joints[*last_parent as usize].tpose;
+            for parent in self.parents.iter().take(self.parents.len()-1).rev() {
+                pose = joints[*parent as usize].tpose * pose
+            }
+            self.tpose * pose
+        } else {
+            return self.tpose
         }
-    }
-    pub fn pose(&self, joints: &[Joint]) -> Mat4x4 {
-        let mut pose = Mat4x4::IDENTITY;
-        for parent in self.parents.iter().rev() {
-            pose = joints[*parent as usize].local_pose(joints) * pose
-        }
-        self.local_pose(joints) * pose
     }
 }
 
+#[derive(Clone)]
 pub struct Animator {
-    pub joints: Vec<Joint>,
-    pub buffer: Buffer
+    pub joints: Vec<AnimatorJoint>,
+    pub buffer: Arc<Buffer>
 }
 impl Animator {
     pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>) -> Self {
         let skeleton = mesh.skeleton.as_ref().unwrap();
         Self {
-            joints: skeleton.joints.iter().map(|v|Joint::new(v.clone())).collect(),
+            joints: skeleton.joints.iter().map(|v|AnimatorJoint::new(v.clone())).collect(),
             buffer: e.device.create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {
                     label: None,
                     contents: bytemuck::bytes_of(&AnimatorFrame::default()),
-                    usage: wgpu::BufferUsages::UNIFORM
+                    usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
                 }
-            )
+            ).into()
         }
     }
-    pub fn get_pose(&self) -> AnimatorFrame {
+    pub fn get_frame(&self) -> AnimatorFrame {
         let mut frame = AnimatorFrame::default();
         for (i, joint) in self.joints.iter().enumerate() {
-            frame.0[i] = joint.pose(&self.joints) * joint.ibm
+            frame.0[i] = joint.global_pose(&self.joints)
         }
         frame
+    }
+    pub fn update(&self, e: &Engine) {
+        e.queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&self.get_frame()))
     }
 }
