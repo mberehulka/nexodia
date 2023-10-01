@@ -3,6 +3,8 @@ use bytemuck::Pod;
 pub mod p;
 pub mod pu;
 pub mod puj;
+pub mod pnj;
+pub mod pj;
 
 pub trait Vertex: Default + Pod {
     const ATTRIBUTES: &'static [wgpu::VertexAttribute];

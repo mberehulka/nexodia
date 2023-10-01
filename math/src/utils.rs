@@ -1,5 +1,15 @@
 use crate::{Mat4x4, Vec4};
 
+macro_rules! strip_plus {
+    (+ $($rest: tt)*) => {
+        $($rest)*
+    }
+}
+macro_rules! count {
+    () => (0usize);
+    ( $x:tt $($xs:tt)* ) => (1usize + count!($($xs)*));
+}
+
 #[inline(always)]
 pub fn deg_to_rad(deg: f32) -> f32 {
     deg * (std::f32::consts::PI / 180.)

@@ -74,7 +74,7 @@ impl ScriptThread {
     }
     pub fn wait(&self) {
         self.send(ThreadEvent::Ready);
-        self.rx.lock().unwrap().recv().unwrap()
+        self.rx.lock().unwrap().recv().ok();
     }
     pub fn drop(&self) {
         self.send(ThreadEvent::Close);

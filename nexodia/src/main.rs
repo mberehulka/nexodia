@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::time::Instant;
-use engine::{Engine, Script, Instances, InstancesRenderer, Frame, Animator};
+use engine::{Engine, Script, Frame, Object, ObjectRenderer, Quaternion, deg_to_rad, decode, Transform, Vec3, Animator, Light};
 use winit::{event::VirtualKeyCode, dpi::PhysicalSize};
 
 #[macro_use]
@@ -13,48 +13,47 @@ mod shaders;  use shaders::*;
 pub struct Scene {
     e: &'static Engine,
     frame: Frame,
-    characters_shader: shaders::character::Shader,
-    characters: Instances<character::Shader>,
-    characters_animator: Animator
+    shaders: Shaders,
+    character: Object<character::Shader>,
+    character_face: Object<character::Shader>,
+    character_animator: Animator,
+    scenary: Vec<Object<basic::Shader>>
 }
 impl Scene {
     fn new(e: &'static Engine) -> Self {
-        let tx = 5;
-        let ty = 1;
-        let tz = 5;
-        let size = 2.;
-        let space = 4.;
+        let character_mesh = e.load_mesh("assets/male/male.bin");
+        let mut character_animator = e.load_animations(&character_mesh, "assets/male/animations/");
+        character_animator.transform.scale = 2.0.into();
+        character_animator.transform.rotation = Quaternion::from_angle_x(deg_to_rad(-90.));
 
-        let character_mesh = e.load_mesh("assets/mutant/mutant.bin");
-        let characters_animator = Animator::new(e, &character_mesh);
-        let character_material = character::Material::new(
-            characters_animator.clone(),
-            vec![ e.load_texture("assets/mutant/textures/diffuse.bin") ]
-        );
-        let characters_shader = character_material.create_shader(e);
+        let light = Light::new(e, Vec3::new(0., 0., 0.));
         
         Self {
             e,
             frame: Frame::new(e, true),
-            characters_shader,
-            characters: e.create_instances(
-                character_mesh,
-                character_material,
-                Some(
-                    (0..tx).map(|x|
-                        (0..ty).map(move |y|
-                            (0..tz).map(move |z|
-                                character::Instance {
-                                    translation: [(x-tx/2) as f32*space, (y-ty/2) as f32*space, (z-tz/2) as f32*space],
-                                    scale: [size;3],
-                                    texture_id: 0
-                                }
-                            )
-                        )
-                    ).flatten().flatten().collect()
-                )
+            shaders: Shaders::new(e),
+            character: e.create_object(
+                character::Material::new(e, &character_animator, &light),
+                character_mesh
             ),
-            characters_animator
+            character_face: e.create_object(
+                character::Material::new(e, &character_animator, &light),
+                e.load_mesh("assets/male/male_face.bin")
+            ),
+            character_animator,
+            scenary: vec![
+                e.create_object(
+                    basic::Material::new(e, e.load_texture("assets/textures/grass.bin")),
+                    e.initialize_mesh(
+                        decode::<engine::compiler::Mesh>("assets/geometries/cube.bin")
+                            .transform(Transform::new(
+                                Vec3::new(0., 0., 0.),
+                                Quaternion::default(),
+                                Vec3::new(5., 0., 5.)
+                            ))
+                    )
+                )
+            ]
         }
     }
 }
@@ -66,11 +65,20 @@ impl Script for Scene {
         self.frame.window_resized()
     }
     fn update(&mut self) {
-        self.characters_animator.update(self.e);
-        self.characters.update(self.e);
+        if self.e.pressed_keys["C"] {
+            self.character_animator.set_animation(1)
+        } else {
+            self.character_animator.set_animation(0)
+        }
+        self.character_animator.update(self.e);
+
         let mut render_pass = self.frame.new_render_pass(true);
         render_pass.set_bind_group(0, &self.e.camera.bind_group, &[]);
-        self.characters_shader.render_instances(&mut render_pass, &self.characters);
+        self.shaders.character.render_object(&mut render_pass, &self.character);
+        self.shaders.character.render_object(&mut render_pass, &self.character_face);
+        for obj in self.scenary.iter() {
+            self.shaders.basic.render_object(&mut render_pass, obj)
+        }
     }
     fn render(&mut self) {
         self.frame.render()

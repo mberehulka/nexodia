@@ -1,13 +1,8 @@
 struct Vertex {
     @location(0) position: vec3<f32>,
-    @location(1) uv: vec2<f32>,
+    @location(1) normal: vec3<f32>,
     @location(2) joints: vec4<u32>,
     @location(3) weights: vec4<f32>
-};
-struct Instance {
-    @location(4) translation: vec3<f32>,
-    @location(5) scale: vec3<f32>,
-    @location(6) texture_id: u32
 };
 
 struct Camera {
@@ -21,11 +16,14 @@ struct Joints {
 };
 @group(1) @binding(0)
 var<uniform> joints: Joints;
+struct Light {
+    @location(0) dir: vec3<f32>
+};
+@group(1) @binding(1)
+var<uniform> light: Light;
 
 struct VertexOutput {
-    @builtin(position) position: vec4<f32>,
-    @location(0) uv: vec2<f32>,
-    @location(1) texture_id: u32
+    @builtin(position) position: vec4<f32>
 };
 
 fn apply_skin(vertex: Vertex, v3: vec3<f32>) -> vec3<f32> {
@@ -39,20 +37,13 @@ fn apply_skin(vertex: Vertex, v3: vec3<f32>) -> vec3<f32> {
 }
 
 @vertex
-fn vs_main(vertex: Vertex, instance: Instance) -> VertexOutput {
+fn vs_main(vertex: Vertex) -> VertexOutput {
     var vout: VertexOutput;
-    vout.position = camera.perspective * vec4<f32>(apply_skin(vertex, vertex.position) * instance.scale + instance.translation, 1.);
-    vout.uv = vertex.uv;
-    vout.texture_id = instance.texture_id;
+    vout.position = camera.perspective * vec4<f32>(apply_skin(vertex, vertex.position), 1.);
     return vout;
 }
 
-@group(1) @binding(1)
-var t_diffuse: binding_array<texture_2d<f32>>;
-@group(1) @binding(2)
-var s_diffuse: binding_array<sampler>;
-
 @fragment
 fn fs_main(vout: VertexOutput) -> @location(0) vec4<f32> {
-    return textureSample(t_diffuse[vout.texture_id], s_diffuse[vout.texture_id], vout.uv);
+    return vec4<f32>(1.);
 }

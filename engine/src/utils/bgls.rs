@@ -2,13 +2,13 @@ use std::num::NonZeroU32;
 
 use wgpu::{Device, BindGroupLayout};
 
-pub fn uniform(device: &Device) -> BindGroupLayout {
+pub fn uniform(device: &Device, visibility: wgpu::ShaderStages) -> BindGroupLayout {
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: None,
         entries: &[
             wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::FRAGMENT,
+                visibility,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Uniform,
                     has_dynamic_offset: false,

@@ -1,5 +1,5 @@
 {
-    cargo run --bin compiler --release
+    cargo run --bin compiler
     wait
 }&
 {
@@ -9,4 +9,5 @@
 
 wait
 
+echo "Compilation finished in $SECONDS seconds"
 # read -p "Compilation finished in $SECONDS seconds, press enter to exit..."

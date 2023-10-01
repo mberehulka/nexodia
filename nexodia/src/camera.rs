@@ -34,7 +34,6 @@ impl Script for Camera {
     fn event(&mut self, event: winit::event::Event<'static, ()>) {
         match event {
             Event::WindowEvent { event: WindowEvent::CursorMoved { position, .. }, .. } => {
-                self.e.center_cursor();
                 let ws = self.e.window.inner_size();
                 self.cursor_movement = Vec2::new(
                     position.x as f32 - ws.width as f32 / 2.,
@@ -45,7 +44,9 @@ impl Script for Camera {
         }
     }
     fn update(&mut self) {
-        let s = 5. * self.e.time.delta();
+        self.e.center_cursor();
+
+        let s = 3. * self.e.time.delta();
 
         self.rotation.y += self.cursor_movement.x * self.cursor_speed.y * s;
         self.rotation.x = (self.rotation.x - self.cursor_speed.x * self.cursor_movement.y * s).min(CAM_MAX_ANG).max(-CAM_MAX_ANG);
@@ -66,11 +67,13 @@ impl Script for Camera {
 
         let ws = self.e.window.inner_size();
         let aspect = ws.width as f32 / ws.height as f32;
-        let proj = Mat4x4::perspective(engine::deg_to_rad(90.), aspect, 0.01, 100.);
+        let proj = Mat4x4::perspective(aspect, aspect, 0.01, 100.);
         let position = self.target + self.translation;
         let view = Mat4x4::look_at(position, position + Vec3::new(0., 0., 1.).rotate_x(self.rotation.x).rotate_y(self.rotation.y));
         self.e.update_camera_buffer(CameraBinding {
             matrix: (proj * view).into()
-        })
+        });
+        
+        self.cursor_movement = Vec2::new(0., 0.)
     }
 }

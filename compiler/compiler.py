@@ -21,11 +21,20 @@ def write_u8(b: bytearray, v: any):
     b.extend(v.to_bytes(1, byteorder='big', signed=False))
 def write_str(b: bytearray, v: any):
     b.extend(str.encode(str(v))+b'#')
-def write_mat4x4(b: bytearray, mat: any):
-    b.extend(struct.pack(">f", mat[0][0])); b.extend(struct.pack(">f", mat[1][0])); b.extend(struct.pack(">f", mat[2][0])); b.extend(struct.pack(">f", mat[3][0]))
-    b.extend(struct.pack(">f", mat[0][1])); b.extend(struct.pack(">f", mat[1][1])); b.extend(struct.pack(">f", mat[2][1])); b.extend(struct.pack(">f", mat[3][1]))
-    b.extend(struct.pack(">f", mat[0][2])); b.extend(struct.pack(">f", mat[1][2])); b.extend(struct.pack(">f", mat[2][2])); b.extend(struct.pack(">f", mat[3][2]))
-    b.extend(struct.pack(">f", mat[0][3])); b.extend(struct.pack(">f", mat[1][3])); b.extend(struct.pack(">f", mat[2][3])); b.extend(struct.pack(">f", mat[3][3]))
+def write_vec3(b: bytearray, v: any):
+    b.extend(struct.pack(">f", v.x)); b.extend(struct.pack(">f", v.y)); b.extend(struct.pack(">f", v.z))
+def write_vec4(b: bytearray, v: any):
+    b.extend(struct.pack(">f", v.x)); b.extend(struct.pack(">f", v.y)); b.extend(struct.pack(">f", v.z)); b.extend(struct.pack(">f", v.w))
+# def write_mat4x4(b: bytearray, mat: any):
+#     b.extend(struct.pack(">f", mat[0][0])); b.extend(struct.pack(">f", mat[1][0])); b.extend(struct.pack(">f", mat[2][0])); b.extend(struct.pack(">f", mat[3][0]))
+#     b.extend(struct.pack(">f", mat[0][1])); b.extend(struct.pack(">f", mat[1][1])); b.extend(struct.pack(">f", mat[2][1])); b.extend(struct.pack(">f", mat[3][1]))
+#     b.extend(struct.pack(">f", mat[0][2])); b.extend(struct.pack(">f", mat[1][2])); b.extend(struct.pack(">f", mat[2][2])); b.extend(struct.pack(">f", mat[3][2]))
+#     b.extend(struct.pack(">f", mat[0][3])); b.extend(struct.pack(">f", mat[1][3])); b.extend(struct.pack(">f", mat[2][3])); b.extend(struct.pack(">f", mat[3][3]))
+def write_mat4x4_decomposed(b: bytearray, mat: any):
+    transform, rotation, scale = mat.decompose()
+    write_vec3(b, transform)
+    write_vec4(b, rotation)
+    write_vec3(b, scale)
 
 def get_armature():
     for object in bpy.data.objects:
@@ -52,7 +61,7 @@ def export_frames(b: BufferedWriter):
         bpy.context.scene.frame_set(frame)
         bpy.context.view_layer.update()
         for bone in bpy.context.selected_pose_bones:
-            write_mat4x4(b, bone.matrix @ (bone.parent.matrix.inverted_safe()) if bone.parent else bone.matrix )
+            write_mat4x4_decomposed(b, bone.matrix @ (bone.parent.matrix.inverted_safe()) if bone.parent else bone.matrix )
 
 def iter_path(root: Path, settings: Settings = Settings()):
     settings.update(root.joinpath("settings.json"))

@@ -1,9 +1,9 @@
 use std::{path::Path, time::Instant};
-use math::Mat4x4;
+use math::{Transform, Vec3, Quaternion};
 
 use crate::{Engine, Reader};
 
-type Frame = Vec<Mat4x4>;
+type Frame = Vec<Transform>;
 
 pub struct Animation {
     pub frames: Vec<Frame>
@@ -22,7 +22,11 @@ impl Engine {
         for _ in 0..frames_count {
             let mut joints = Vec::with_capacity(joints_count);
             for _ in 0..joints_count {
-                joints.push(r.read_mat4x4().into())
+                joints.push(Transform::new(
+                    Vec3::new(r.read_f32(), r.read_f32(), r.read_f32()),
+                    Quaternion::new(r.read_f32(), r.read_f32(), r.read_f32(), r.read_f32()),
+                    Vec3::new(r.read_f32(), r.read_f32(), r.read_f32())
+                ))
             }
             frames.push(joints)
         }
@@ -30,7 +34,7 @@ impl Engine {
         info!("Animation '{}' loaded in: {}ms", path.as_ref().display(), (Instant::now() - start).as_millis());
         
         Animation {
-            frames
+            frames: frames.into()
         }
     }
 }

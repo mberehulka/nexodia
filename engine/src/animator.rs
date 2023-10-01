@@ -1,71 +1,120 @@
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
+
 use compiler::Joint;
-use math::Mat4x4;
+use math::{Mat4x4, Transform};
 use wgpu::{Buffer, util::DeviceExt};
 
-use crate::{Mesh, Vertex, Engine};
+use crate::{Mesh, Vertex, Engine, Animation};
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct AnimatorFrame(pub [Mat4x4; 128]);
-impl Default for AnimatorFrame {
+pub struct AnimatorBindingFrame(pub [[[f32;4];4]; 128]);
+impl Default for AnimatorBindingFrame {
     fn default() -> Self {
-        Self([Mat4x4::IDENTITY; 128])
+        Self([Mat4x4::IDENTITY.into(); 128])
     }
 }
 
-#[derive(Clone)]
 pub struct AnimatorJoint {
-    pub parents: Vec<u8>,
-    pub tpose: Mat4x4
+    pub id: usize,
+    pub parents: Vec<u8>,    // from nearest to further
+    pub local_pose: Transform,
+    pub global_ibm: Mat4x4
 }
 impl AnimatorJoint {
-    pub fn new(sj: Joint) -> Self {
+    pub fn new(sj: Joint, pose: Transform, id: usize) -> Self {
         Self {
+            id,
             parents: sj.parents,
-            tpose: sj.pose
+            local_pose: pose,
+            global_ibm: sj.global_ibm
         }
     }
-    pub fn global_pose(&self, joints: &[AnimatorJoint]) -> Mat4x4 {
-        if let Some(last_parent) = self.parents.iter().last() {
-            let mut pose = joints[*last_parent as usize].tpose;
-            for parent in self.parents.iter().take(self.parents.len()-1).rev() {
-                pose = joints[*parent as usize].tpose * pose
-            }
-            self.tpose * pose
-        } else {
-            return self.tpose
-        }
+    pub fn global_pose(&self, joints: &[AnimatorJoint]) -> Transform {
+        self.parents.iter()
+            .map(|i| joints[*i as usize].local_pose)
+            .fold(self.local_pose, |acc, e| acc * e)
     }
 }
 
-#[derive(Clone)]
 pub struct Animator {
+    pub animations: Vec<Animation>,
+    pub transform: Transform,
     pub joints: Vec<AnimatorJoint>,
-    pub buffer: Arc<Buffer>
+    pub buffer: Arc<Buffer>,
+    time: f32,
+    pub speed: f32,
+    current_animation: usize
 }
 impl Animator {
-    pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>) -> Self {
+    pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>, animations: Vec<Animation>) -> Self {
         let skeleton = mesh.skeleton.as_ref().unwrap();
+        let first_frame = animations.first().unwrap().frames.first().unwrap();
         Self {
-            joints: skeleton.joints.iter().map(|v|AnimatorJoint::new(v.clone())).collect(),
+            transform: Default::default(),
+            joints: skeleton.joints.iter()
+                .zip(first_frame.iter())
+                .enumerate()
+                .map(|(i, (joint, pose))|AnimatorJoint::new(joint.clone(), *pose, i))
+                .collect(),
+            animations: animations.into(),
             buffer: e.device.create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {
                     label: None,
-                    contents: bytemuck::bytes_of(&AnimatorFrame::default()),
+                    contents: bytemuck::bytes_of(&AnimatorBindingFrame::default()),
                     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
                 }
-            ).into()
+            ).into(),
+            time: 0.,
+            speed: 30.,
+            current_animation: 0
         }
     }
-    pub fn get_frame(&self) -> AnimatorFrame {
-        let mut frame = AnimatorFrame::default();
+    pub fn set_animation(&mut self, animation: usize) {
+        if animation != self.current_animation {
+            self.current_animation = animation;
+            self.time  = 0.
+        }
+    }
+    fn get_binding_frame(&mut self, e: &Engine) -> AnimatorBindingFrame {
+        let cur_animation = &self.animations[self.current_animation];
+
+        // Update joints local pose
+        self.time += e.time.delta() * self.speed;
+        if self.time as usize >= cur_animation.frames.len() - 1 {
+            self.time = 0.
+        }
+        let time_frac = self.time - self.time.floor();
+
+        for ((joint, pose), next_pose) in
+            self.joints.iter_mut()
+                .zip(cur_animation.frames[self.time as usize].iter())
+                .zip(cur_animation.frames[self.time as usize + 1].iter())
+        {
+            joint.local_pose = pose.lerp(*next_pose, time_frac)
+        }
+
+        // Calculate global pose
+        let mut binding_frame = AnimatorBindingFrame::default();
         for (i, joint) in self.joints.iter().enumerate() {
-            frame.0[i] = joint.global_pose(&self.joints)
+            binding_frame.0[i] = (self.transform * (joint.global_pose(&self.joints) * joint.global_ibm)).into()
         }
-        frame
+        binding_frame
     }
-    pub fn update(&self, e: &Engine) {
-        e.queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&self.get_frame()))
+    pub fn update(&mut self, e: &Engine) {
+        let binding_frame = self.get_binding_frame(e);
+        e.queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&binding_frame))
+    }
+}
+
+impl Engine {
+    pub fn load_animations<V: Vertex>(&self, mesh: &Mesh<V>, path: impl AsRef<Path>) -> Animator {
+        let animations = std::fs::read_dir(path.as_ref()).unwrap()
+            .into_iter()
+            .map(|path| path.unwrap().path())
+            .filter(|path| path.extension().unwrap().to_str().unwrap() == "bin")
+            .map(|path| self.load_animation(path))
+            .collect();
+        Animator::new(self, mesh, animations)
     }
 }

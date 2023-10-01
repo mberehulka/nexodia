@@ -1,12 +1,11 @@
 use std::ops::{Index, IndexMut};
 use bytemuck::Pod;
-use math::{Quaternion, Vec3};
 use wgpu::util::DeviceExt;
 
-use crate::{Shader, Mesh, Engine, Material, MaterialBuffer};
+use crate::{Shader, Mesh, Engine, Material};
 
 pub struct Instances <S: Shader> {
-    pub material_buffer: <S::Material as Material>::MaterialBuffer,
+    pub material: S::Material,
     mesh: Mesh<S::Vertex>,
     instances_buffer: wgpu::Buffer,
     instances_buffer_length: u32,
@@ -37,7 +36,7 @@ impl Engine {
     pub fn create_instances<S: Shader>(&'static self, mesh: Mesh<S::Vertex>, material: S::Material, instances: Option<Vec<S::Instance>>) -> Instances<S> {
         match instances {
             Some(instances) => Instances {
-                material_buffer: material.create_buffer(self),
+                material,
                 mesh,
                 instances_buffer: self.device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: None,
@@ -49,7 +48,7 @@ impl Engine {
                 needs_update: false
             },
             None => Instances {
-                material_buffer: material.create_buffer(self),
+                material,
                 mesh,
                 instances_buffer: self.device.create_buffer(&wgpu::BufferDescriptor {
                     label: None,
@@ -81,23 +80,13 @@ impl<S: Shader> IndexMut<usize> for Instances<S> {
 pub trait InstanceBinding: Pod {}
 impl InstanceBinding for () {}
 
-#[repr(C)]
-#[derive(Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-pub struct Transform {
-    pub position: Vec3,
-    pub scale: Vec3,
-    pub rotation: Quaternion
-}
-
 pub trait InstancesRenderer: Shader {
     fn render_instances<'r, 's: 'r>(&'s self, render_pass: &mut wgpu::RenderPass<'r>, instances: &'s Instances<Self>) where Self: Sized {
         if instances.instances_buffer_length == 0 { return }
         render_pass.set_pipeline(self.pipeline());
         render_pass.set_vertex_buffer(0, instances.mesh.vertices_buffer.slice(..));
         render_pass.set_vertex_buffer(1, instances.instances_buffer.slice(..));
-        if let Some(mbg) = instances.material_buffer.bind_group() {
-            render_pass.set_bind_group(1, mbg, &[])
-        }
+        instances.material.set(render_pass, 0);
         render_pass.draw(0..instances.mesh.vertices_len, 0..instances.instances_buffer_length);
     }
 }

@@ -9,7 +9,6 @@ pub struct Settings {
     pub normals: bool,
     pub joints: bool,
     pub skeleton: bool,
-    pub skeleton_apply_ibm: bool,
     pub image_opacity: bool,
     pub image_scale: f32
 }

@@ -12,8 +12,16 @@ impl Mat3x3 {
     }
     #[inline(always)]
     pub fn determinant(self) -> f32 {
-        self.x.x * (self.y.y * self.z.z - self.z.y * self.y.z)
-            - self.y.x * (self.x.y * self.z.z - self.z.y * self.x.z)
-            + self.z.x * (self.x.y * self.y.z - self.y.y * self.x.z)
+        self.x.x * (self.y.y * self.z.z - self.z.y * self.y.z) -
+        self.y.x * (self.x.y * self.z.z - self.z.y * self.x.z) +
+        self.z.x * (self.x.y * self.y.z - self.y.y * self.x.z)
+    }
+    #[inline(always)]
+    pub fn diagonal(&self) -> Vec3 {
+        Vec3::new(self.x.x, self.y.y, self.z.z)
+    }
+    #[inline(always)]
+    pub fn trace(&self) -> f32 {
+        self.diagonal().sum()
     }
 }

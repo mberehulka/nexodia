@@ -4,7 +4,6 @@
     "normals": false,
     "joints": false,
     "skeleton": false,
-    "skeleton_apply_ibm": false,
     "image_opacity": false,
     "image_scale": 0.5
 }

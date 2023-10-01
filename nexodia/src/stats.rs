@@ -9,7 +9,7 @@ pub struct Stats {
 }
 impl Stats {
     pub fn new(e: &'static Engine) -> Self {
-        let font = Reader::new("assets/fonts/Roboto/Roboto-Regular.bin");
+        let font = Reader::new("assets/fonts/Roboto-Regular.bin");
         let font = FontArc::new(FontVec::try_from_vec(font.get_rest()).unwrap());
         let ws = e.window.inner_size();
         Self {

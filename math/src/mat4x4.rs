@@ -1,11 +1,9 @@
 use std::ops::Mul;
 use bincode::{Decode, Encode};
-use bytemuck::{Pod, Zeroable};
 
 use crate::{Vec4, Vec3, Mat3x3, det_sub_proc_unsafe};
 
-#[repr(C)]
-#[derive(Debug, Default, Copy, Clone, Encode, Decode, Pod, Zeroable)]
+#[derive(Debug, Default, Copy, Clone, Encode, Decode)]
 pub struct Mat4x4 {
     pub x: Vec4,
     pub y: Vec4,
@@ -90,6 +88,24 @@ impl Mat4x4 {
             ]))
         }
     }
+    #[inline(always)]
+    pub const fn from_translation(v: Vec3) -> Self {
+        Self::new(
+            Vec4::new(1., 0., 0., v.x),
+            Vec4::new(0., 1., 0., v.y),
+            Vec4::new(0., 0., 1., v.z),
+            Vec4::new(0., 0., 0., 1.)
+        )
+    }
+    #[inline(always)]
+    pub const fn from_scale(v: Vec3) -> Self {
+        Self::new(
+            Vec4::new(v.x, 0., 0., 0.),
+            Vec4::new(0., v.y, 0., 0.),
+            Vec4::new(0., 0., v.z, 0.),
+            Vec4::new(0., 0., 0., 1.)
+        )
+    }
 }
 
 impl Mul<Mat4x4> for Mat4x4 {
@@ -99,17 +115,7 @@ impl Mul<Mat4x4> for Mat4x4 {
             self.x*rhs.x.x + self.y*rhs.x.y + self.z*rhs.x.z + self.w*rhs.x.w,
             self.x*rhs.y.x + self.y*rhs.y.y + self.z*rhs.y.z + self.w*rhs.y.w,
             self.x*rhs.z.x + self.y*rhs.z.y + self.z*rhs.z.z + self.w*rhs.z.w,
-            self.x*rhs.w.x + self.y*rhs.w.y + self.z*rhs.w.z + self.w*rhs.w.w,
-        )
-    }
-}
-impl From<[f32;16]> for Mat4x4 {
-    fn from(v: [f32;16]) -> Self {
-        Self::new(
-            Vec4::from([v[0], v[1], v[2], v[3]]),
-            Vec4::from([v[4], v[5], v[6], v[7]]),
-            Vec4::from([v[8], v[9], v[10], v[11]]),
-            Vec4::from([v[12], v[13], v[14], v[15]])
+            self.x*rhs.w.x + self.y*rhs.w.y + self.z*rhs.w.z + self.w*rhs.w.w
         )
     }
 }
@@ -126,20 +132,20 @@ impl From<Mat4x4> for [f32;16] {
 impl From<[[f32;4];4]> for Mat4x4 {
     fn from(v: [[f32;4];4]) -> Self {
         Self::new(
-            Vec4::from(v[0]),
-            Vec4::from(v[1]),
-            Vec4::from(v[2]),
-            Vec4::from(v[3])
+            unsafe { *v.get_unchecked(0) }.into(),
+            unsafe { *v.get_unchecked(1) }.into(),
+            unsafe { *v.get_unchecked(2) }.into(),
+            unsafe { *v.get_unchecked(3) }.into()
         )
     }
 }
 impl From<Mat4x4> for [[f32;4];4] {
     fn from(v: Mat4x4) -> Self {
         [
-            v.x.into(),
-            v.y.into(),
-            v.z.into(),
-            v.w.into()
+            [v.x.x, v.x.y, v.x.z, v.x.w],
+            [v.y.x, v.y.y, v.y.z, v.y.w],
+            [v.z.x, v.z.y, v.z.z, v.z.w],
+            [v.w.x, v.w.y, v.w.z, v.w.w]
         ]
     }
 }
@@ -159,5 +165,10 @@ impl Mul<Vec4> for Mat4x4 {
         self.y * rhs.y +
         self.z * rhs.z +
         self.w * rhs.w
+    }
+}
+impl From<Mat4x4> for Mat3x3 {
+    fn from(value: Mat4x4) -> Self {
+        Self::new(value.x.truncate(), value.y.truncate(), value.z.truncate())
     }
 }

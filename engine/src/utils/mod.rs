@@ -1,3 +1,4 @@
+use std::sync::{Arc, Mutex, MutexGuard};
 use wgpu::{Buffer, util::DeviceExt, BufferUsages};
 use winit::dpi::PhysicalPosition;
 
@@ -6,7 +7,6 @@ use crate::Engine;
 pub mod initialization;
 pub mod bgls;
 pub mod shaders;
-pub mod materials;
 pub mod pressed_keys;
 
 impl Engine {
@@ -24,6 +24,27 @@ impl Engine {
         self.window.set_cursor_position(PhysicalPosition {
             x: s.width/2,
             y: s.height/2
-        }).unwrap()
+        }).ok();
+    }
+}
+
+#[derive(Default, Clone)]
+pub struct AM<T: Clone>(Arc<Mutex<T>>);
+impl<T: Clone> AM<T> {
+    #[inline(always)]
+    pub fn new(t: T) -> Self {
+        Self(Arc::new(Mutex::new(t)))
+    }
+    #[inline(always)]
+    pub fn get(&self) -> T {
+        self.0.lock().unwrap().clone()
+    }
+    #[inline(always)]
+    pub fn get_mut<'s>(&'s self) -> MutexGuard<'s, T> {
+        self.0.lock().unwrap()
+    }
+    #[inline(always)]
+    pub fn set(&self, t: T) {
+        *self.0.lock().unwrap() = t
     }
 }
