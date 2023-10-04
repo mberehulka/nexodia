@@ -15,18 +15,17 @@ pub struct Scene {
     frame: Frame,
     shaders: Shaders,
     character: Object<character::Shader>,
-    character_face: Object<character::Shader>,
     character_animator: Animator,
     scenary: Vec<Object<basic::Shader>>
 }
 impl Scene {
     fn new(e: &'static Engine) -> Self {
-        let character_mesh = e.load_mesh("assets/male/male.bin");
+        let character_mesh = e.load_mesh("assets/male/base/base.bin");
         let mut character_animator = e.load_animations(&character_mesh, "assets/male/animations/");
-        character_animator.transform.scale = 2.0.into();
+        character_animator.transform.scale = 1.0.into();
         character_animator.transform.rotation = Quaternion::from_angle_x(deg_to_rad(-90.));
 
-        let light = Light::new(e, Vec3::new(0., 0., 0.));
+        let light = Light::new(e, Quaternion::from_angle_x(0.));
         
         Self {
             e,
@@ -35,10 +34,6 @@ impl Scene {
             character: e.create_object(
                 character::Material::new(e, &character_animator, &light),
                 character_mesh
-            ),
-            character_face: e.create_object(
-                character::Material::new(e, &character_animator, &light),
-                e.load_mesh("assets/male/male_face.bin")
             ),
             character_animator,
             scenary: vec![
@@ -75,7 +70,6 @@ impl Script for Scene {
         let mut render_pass = self.frame.new_render_pass(true);
         render_pass.set_bind_group(0, &self.e.camera.bind_group, &[]);
         self.shaders.character.render_object(&mut render_pass, &self.character);
-        self.shaders.character.render_object(&mut render_pass, &self.character_face);
         for obj in self.scenary.iter() {
             self.shaders.basic.render_object(&mut render_pass, obj)
         }

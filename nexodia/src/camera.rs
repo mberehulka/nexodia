@@ -71,7 +71,8 @@ impl Script for Camera {
         let position = self.target + self.translation;
         let view = Mat4x4::look_at(position, position + Vec3::new(0., 0., 1.).rotate_x(self.rotation.x).rotate_y(self.rotation.y));
         self.e.update_camera_buffer(CameraBinding {
-            matrix: (proj * view).into()
+            matrix: (proj * view).into(),
+            position: position.extend(1.).into()
         });
         
         self.cursor_movement = Vec2::new(0., 0.)

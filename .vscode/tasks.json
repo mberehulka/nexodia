@@ -24,8 +24,8 @@
             "group": "build"
         },
         {
-            "label": "C",
-            "command": "cargo run --bin compiler",
+            "label": "Convert VRM to FBX",
+            "command": "blender --background --python './compiler/blender/vrm to fbx.py'",
             "type": "shell",
             "presentation": {
                 "reveal": "always",

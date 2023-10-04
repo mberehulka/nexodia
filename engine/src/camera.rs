@@ -5,7 +5,8 @@ use crate::Engine;
 #[repr(C)]
 #[derive(Default, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct CameraBinding {
-    pub matrix: [[f32;4];4]
+    pub matrix: [[f32;4];4],
+    pub position: [f32;4]
 }
 
 pub struct Camera {

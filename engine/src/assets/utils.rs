@@ -1,8 +1,14 @@
 use std::path::Path;
 use bincode::{config, Decode};
+use math::{Transform, Vec3, Quaternion};
 
 pub fn decode<T: Decode>(path: impl AsRef<Path>) -> T {
-    let bytes = zstd::stream::decode_all(std::fs::OpenOptions::new().read(true).open(&path).unwrap()).unwrap();
+    let bytes = zstd::stream::decode_all(
+        std::fs::OpenOptions::new()
+            .read(true)
+            .open(&path)
+            .expect(&format!("Filed to read {}", path.as_ref().display()))
+    ).unwrap();
     bincode::decode_from_slice(&bytes[..], config::standard()).unwrap().0
 }
 
@@ -154,6 +160,14 @@ impl Reader {
     #[inline(always)]
     pub fn is_finished(&self) -> bool {
         self.cursor == self.bytes.len()
+    }
+    #[inline(always)]
+    pub fn read_transform(&mut self) -> Transform {
+        Transform::new(
+            Vec3::new(self.read_f32(), self.read_f32(), self.read_f32()),
+            Quaternion::new(self.read_f32(), self.read_f32(), self.read_f32(), self.read_f32()),
+            Vec3::new(self.read_f32(), self.read_f32(), self.read_f32())
+        )
     }
 }
 impl Drop for Reader {

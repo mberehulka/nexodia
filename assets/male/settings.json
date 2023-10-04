@@ -1,4 +1,5 @@
 {
+    "uvs": false,
     "normals": true,
     "joints": true,
     "skeleton": true

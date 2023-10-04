@@ -94,7 +94,13 @@ macro_rules! shader {
             fn new(e: &'static engine::Engine) -> Self {
                 Self(engine::utils::shaders::default_pipeline(
                     e,
-                    wgpu::include_wgsl!("./shader.wgsl").into(),
+                    wgpu::ShaderModuleDescriptor {
+                        label: None,
+                        source: wgpu::ShaderSource::Wgsl(std::borrow::Cow::Owned(
+                            include_str!("./shader.wgsl")
+                                .replace("#MAX_JOINTS", &engine::MAX_JOINTS.to_string())
+                        ))
+                    },
                     &[
                         Self::Vertex::LAYOUT,
                         $($vbs),*

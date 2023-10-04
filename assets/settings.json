@@ -1,9 +1,0 @@
-{
-    "compression_level": 12,
-    "uvs": false,
-    "normals": false,
-    "joints": false,
-    "skeleton": false,
-    "image_opacity": false,
-    "image_scale": 0.5
-}

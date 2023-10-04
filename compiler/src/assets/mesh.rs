@@ -6,15 +6,14 @@ use bincode::{Decode, Encode};
 use crate::{Settings, Asset};
 
 #[derive(Clone, Encode, Decode)]
-pub struct Joint {
+pub struct SkeletonJoint {
     pub parents: Vec<u8>,
-    pub global_ibm: Mat4x4
+    pub ibm: Mat4x4
 }
 
 #[derive(Clone, Encode, Decode)]
 pub struct Skeleton {
-    pub joints: Vec<Joint>,
-    pub root: usize
+    pub joints: Vec<SkeletonJoint>
 }
 
 #[derive(Encode, Decode)]
@@ -40,16 +39,14 @@ impl Asset for Mesh {
             let joints: Vec<Node> = skin.joints().collect();
             let joints = joints.iter()
                 .zip(ibms.clone())
-                .map(|(joint, global_ibm)| {
-                    let parents = get_gltf_node_parents_id(&joints, &joint);
-                    Joint {
-                        parents,
-                        global_ibm
+                .map(|(joint, ibm)| {
+                    SkeletonJoint {
+                        parents: get_gltf_node_parents_id(&joints, &joint),
+                        ibm
                     }
                 })
                 .collect::<Vec<_>>();
             Some(Skeleton {
-                root: joints.iter().position(|j|j.parents.is_empty()).unwrap(),
                 joints
             })
         } else { None };
@@ -59,9 +56,14 @@ impl Asset for Mesh {
         let readers = primitives.iter()
             .map(|primitive| primitive.reader(|buffer| Some(&buffers[buffer.index()])) )
             .collect::<Vec<_>>();
+        let mut readers_sizes = Vec::new();
 
         let positions = readers.iter()
-            .map(|reader| reader.read_positions().unwrap() )
+            .map(|reader| {
+                let pos = reader.read_positions().unwrap().collect::<Vec<_>>();
+                readers_sizes.push(pos.len()as u32);
+                pos
+            })
             .flatten()
             .collect();
 
@@ -97,12 +99,18 @@ impl Asset for Mesh {
                 .collect()
         } else { vec![] };
 
-        let indices = if settings.normals {
-            readers.iter()
-                .map(|reader| reader.read_indices().unwrap().into_u32() )
-                .flatten()
-                .collect()
-        } else { vec![] };
+        let mut index_reader_offset = 0;
+        let indices = readers.iter()
+            .zip(readers_sizes)
+            .map(|(reader, reader_size)| {
+                let res = reader.read_indices().unwrap().into_u32()
+                    .map(|i| i + index_reader_offset)
+                    .collect::<Vec<_>>();
+                index_reader_offset += reader_size;
+                res
+            })
+            .flatten()
+            .collect();
 
         Self {
             skeleton,
