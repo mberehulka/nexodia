@@ -4,6 +4,8 @@ use winit::dpi::PhysicalPosition;
 
 use crate::Engine;
 
+mod color;  pub use color::*;
+
 pub mod initialization;
 pub mod bgls;
 pub mod shaders;

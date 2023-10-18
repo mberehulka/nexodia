@@ -1,7 +1,6 @@
 import bpy, struct, os, time, zstd, json
 from io import BufferedWriter
 from pathlib import Path
-from mathutils import Quaternion, Vector
 
 script_start = time.time()
 
@@ -48,6 +47,7 @@ def get_armature():
     raise Exception("No Armature found")
 
 def clear_scenes():
+    bpy.ops.wm.read_homefile(use_empty=True)
     for scene in bpy.data.scenes:
         for ob in scene.objects:
             bpy.data.objects.remove(ob, do_unlink=True)
@@ -70,7 +70,9 @@ def export_frames(b: BufferedWriter):
         write_mat4x4_decomposed(b, bpy.context.object.matrix_local)
 
         for bone in bpy.context.selected_pose_bones:
-            write_mat4x4_decomposed(b, bone.matrix @ bone.parent.matrix.inverted() if bone.parent else bone.matrix)
+            # bone pose in local space
+            # write_mat4x4_decomposed(b, bone.matrix @ bone.parent.matrix.inverted() if bone.parent else bone.matrix)
+            # bone pose in model space
             write_mat4x4_decomposed(b, bone.matrix)
 
 for path in Path("assets").glob("**/*.fbx"):

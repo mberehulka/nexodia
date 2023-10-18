@@ -38,8 +38,10 @@ macro_rules! vec {
                 strip_plus!($(+(self.$field))+)
             }
             #[inline(always)]
-            pub fn lerp(self, other: Self, amount: f32) -> Self {
-                self + ((other - self) * amount)
+            pub fn lerp(&mut self, other: Self, amount: f32) {
+                $(
+                    self.$field = self.$field + ((other.$field - self.$field) * amount)
+                );*
             }
         }
         impl From<f32> for $name {

@@ -4,7 +4,7 @@ use compiler::Skeleton;
 use math::Transform;
 use wgpu::{Buffer, util::DeviceExt};
 
-use crate::{Mesh, Vertex, Engine, Animation};
+use crate::{Mesh, Vertex, Engine, Animation, AnimationFrame};
 
 pub const MAX_JOINTS: usize = 96;  // 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 48, 64, 96, 128, 256, 512, 1024, 2048, 4096
 
@@ -26,13 +26,16 @@ pub struct Animator {
     pub skeleton: Skeleton,
     pub transform: Transform,
     pub buffer: Arc<Buffer>,
+    current_frame: AnimationFrame,
     time: f32,
     pub speed: f32,
-    current_animation: usize
+    current_animation: usize,
+    next_animation: Option<usize>
 }
 impl Animator {
     pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>, animations: Vec<Animation>) -> Self {
         Self {
+            current_frame: animations.first().unwrap().frames.first().unwrap().clone(),
             animations,
             skeleton: mesh.skeleton.clone().unwrap(),
             transform: Default::default(),
@@ -45,7 +48,8 @@ impl Animator {
             ).into(),
             time: 0.,
             speed: 30.,
-            current_animation: 0
+            current_animation: 0,
+            next_animation: None
         }
     }
     pub fn set_animation(&mut self, animation: usize) {
@@ -54,25 +58,36 @@ impl Animator {
             self.time  = 0.
         }
     }
+    pub fn set_next_animation(&mut self, animation: usize) {
+        if animation != self.current_animation {
+            self.current_animation = animation;
+            self.time  = 0.
+        }
+    }
     fn get_binding_frame(&mut self, e: &Engine) -> AnimatorBindingFrame {
         let cur_animation = &self.animations[self.current_animation];
+        let delta_time = e.time.delta();
 
         // Update time
-        self.time += e.time.delta() * self.speed;
+        self.time += delta_time * self.speed;
         if self.time as usize >= cur_animation.frames.len() - 1 {
+            if let Some(next_anim) = self.next_animation {
+                self.current_animation = next_anim;
+                self.next_animation = None
+            }
             self.time = 0.
         }
         let time_frac = self.time - self.time.floor();
         let time = self.time as usize;
-
-        // Get lerped frames
-        let frame = cur_animation.lerp_frames(time, time + 1, time_frac);
-        let transform = self.transform * cur_animation.lerp_root(time, time + 1, time_frac);
+        
+        self.current_frame.lerp(&cur_animation.frames[time], time_frac);
+        
+        let transform = self.transform * self.current_frame.root.model_space;
         
         // Calculate global pose
         let mut binding_frame = AnimatorBindingFrame::default();
-        for i in 0..frame.len() {
-            binding_frame.joints[i] = (transform * (frame[i].model * self.skeleton.joints[i].ibm)).into()
+        for i in 0..self.current_frame.joints.len() {
+            binding_frame.joints[i] = (transform * (self.current_frame.joints[i].model_space * self.skeleton.joints[i].ibm)).into()
         }
         binding_frame
     }

@@ -1,7 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::time::Instant;
-use engine::{Engine, Script, Frame, Object, ObjectRenderer, Quaternion, deg_to_rad, decode, Transform, Vec3, Animator, Light};
+use engine::{Engine, Script, Frame, Object, ObjectRenderer, Quaternion, deg_to_rad, decode, Transform, Vec3, Animator, Light, utils::Color};
 use winit::{event::VirtualKeyCode, dpi::PhysicalSize};
 
 #[macro_use]
@@ -24,17 +24,23 @@ impl Scene {
         let mut character_animator = e.load_animations(&character_mesh, "assets/male/animations/");
         character_animator.transform.scale = 1.0.into();
         character_animator.transform.rotation = Quaternion::from_angle_x(deg_to_rad(-90.));
+        
 
         let light = Light::new(e, Quaternion::from_angle_x(0.));
+
+        let character: Object<character::Shader> = e.create_object(
+            character::Material::new(e, &character_animator, &light),
+            character_mesh
+        );
+        character.material.update(e, character::MaterialBinding {
+            color: Color::from("#ffcdb2").into()
+        });
         
         Self {
             e,
             frame: Frame::new(e, true),
             shaders: Shaders::new(e),
-            character: e.create_object(
-                character::Material::new(e, &character_animator, &light),
-                character_mesh
-            ),
+            character,
             character_animator,
             scenary: vec![
                 e.create_object(

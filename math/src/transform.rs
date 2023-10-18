@@ -15,12 +15,10 @@ impl Transform {
         Self { translation, rotation, scale }
     }
     #[inline(always)]
-    pub fn lerp(self, other: Self, amount: f32) -> Self {
-        Self {
-            translation: self.translation.lerp(other.translation, amount),
-            rotation: self.rotation.lerp(other.rotation, amount),
-            scale: self.scale.lerp(other.scale, amount)
-        }
+    pub fn lerp(&mut self, other: Self, amount: f32) {
+        self.translation.lerp(other.translation, amount);
+        self.rotation.lerp(other.rotation, amount);
+        self.scale.lerp(other.scale, amount)
     }
     #[inline(always)]
     pub fn apply_translation_rotation(self, other: Vec3) -> Vec3 {

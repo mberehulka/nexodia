@@ -4,7 +4,7 @@
 }&
 {
     blender --factory-startup --background --python ./compiler/blender/compile.py | grep -e "^assets" -e "finished"
-    #blender --factory-startup --background --python ./compiler/blender/compile.py
+    # blender --factory-startup --background --python ./compiler/blender/compile.py
     wait
 }&
 

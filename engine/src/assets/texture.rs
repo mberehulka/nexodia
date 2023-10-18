@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc, time::Instant};
+use std::{path::Path, sync::Arc};
 
 use wgpu::{
     Extent3d, TextureDimension, TextureFormat, TextureViewDescriptor, SamplerDescriptor,
@@ -43,8 +43,6 @@ impl Texture {
 }
 impl Engine {
     pub fn load_texture(&self, path: impl AsRef<Path>) -> Texture {
-        let start = Instant::now();
-
         let image: compiler::Image = decode(&path);
         let width = image.width;
         let height = image.height;
@@ -108,8 +106,6 @@ impl Engine {
             }
         );
 
-        info!("Texture '{}' loaded in {}ms", path.as_ref().display(), (Instant::now() - start).as_millis());
-        
         Texture {
             bind_group: bind_group.into(),
             texture: texture.into(),

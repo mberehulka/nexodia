@@ -12,16 +12,22 @@ struct Camera {
 @group(0) @binding(0)
 var<uniform> camera: Camera;
 
-struct Joints {
-    @location(0) joint: array<mat4x4<f32>, #MAX_JOINTS>
+struct Material {
+    @location(0) color: vec4<f32>
 };
 @group(1) @binding(0)
-var<uniform> joints: Joints;
+var<uniform> material: Material;
+
+struct Animator {
+    @location(0) joint: array<mat4x4<f32>, #MAX_JOINTS>
+};
+@group(1) @binding(1)
+var<uniform> animator: Animator;
 
 struct Light {
     @location(0) direction: vec4<f32>
 };
-@group(1) @binding(1)
+@group(1) @binding(2)
 var<uniform> light: Light;
 
 struct VertexOutput {
@@ -36,10 +42,10 @@ fn vs_main(vertex: Vertex) -> VertexOutput {
     var vout: VertexOutput;
     let v4 = vec4<f32>(vertex.position, 1.);
     vout.position = camera.perspective * (
-        ((joints.joint[vertex.joints[0]] * v4) * vertex.weights[0]) +
-        ((joints.joint[vertex.joints[1]] * v4) * vertex.weights[1]) +
-        ((joints.joint[vertex.joints[2]] * v4) * vertex.weights[2]) +
-        ((joints.joint[vertex.joints[3]] * v4) * vertex.weights[3])
+        ((animator.joint[vertex.joints[0]] * v4) * vertex.weights[0]) +
+        ((animator.joint[vertex.joints[1]] * v4) * vertex.weights[1]) +
+        ((animator.joint[vertex.joints[2]] * v4) * vertex.weights[2]) +
+        ((animator.joint[vertex.joints[3]] * v4) * vertex.weights[3])
     );
     vout.normal = vertex.normal;
     vout.joints = vertex.joints;
@@ -54,10 +60,11 @@ fn mat4x4_to_mat3x3(in: mat4x4<f32>) -> mat3x3<f32> {
 @fragment
 fn fs_main(vout: VertexOutput) -> @location(0) vec4<f32> {
     let normal = (
-        ((mat4x4_to_mat3x3(joints.joint[vout.joints[0]]) * vout.normal) * vout.weights[0]) +
-        ((mat4x4_to_mat3x3(joints.joint[vout.joints[1]]) * vout.normal) * vout.weights[1]) +
-        ((mat4x4_to_mat3x3(joints.joint[vout.joints[2]]) * vout.normal) * vout.weights[2]) +
-        ((mat4x4_to_mat3x3(joints.joint[vout.joints[3]]) * vout.normal) * vout.weights[3])
+        ((mat4x4_to_mat3x3(animator.joint[vout.joints[0]]) * vout.normal) * vout.weights[0]) +
+        ((mat4x4_to_mat3x3(animator.joint[vout.joints[1]]) * vout.normal) * vout.weights[1]) +
+        ((mat4x4_to_mat3x3(animator.joint[vout.joints[2]]) * vout.normal) * vout.weights[2]) +
+        ((mat4x4_to_mat3x3(animator.joint[vout.joints[3]]) * vout.normal) * vout.weights[3])
     );
-    return vec4<f32>(vec3<f32>(dot(normal, light.direction.xyz)), 1.);
+    let normal_shadow = vec3<f32>(dot(normal, light.direction.xyz));
+    return vec4<f32>(material.color.xyz * normal_shadow, 1.);
 }

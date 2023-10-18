@@ -2,6 +2,8 @@ use std::path::Path;
 use bincode::{config, Decode};
 use math::{Transform, Vec3, Quaternion};
 
+use crate::AnimationJoint;
+
 pub fn decode<T: Decode>(path: impl AsRef<Path>) -> T {
     let bytes = zstd::stream::decode_all(
         std::fs::OpenOptions::new()
@@ -168,6 +170,12 @@ impl Reader {
             Quaternion::new(self.read_f32(), self.read_f32(), self.read_f32(), self.read_f32()),
             Vec3::new(self.read_f32(), self.read_f32(), self.read_f32())
         )
+    }
+    #[inline(always)]
+    pub fn read_animation_joint(&mut self) -> AnimationJoint {
+        AnimationJoint {
+            model_space: self.read_transform()
+        }
     }
 }
 impl Drop for Reader {

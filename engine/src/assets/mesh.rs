@@ -1,4 +1,4 @@
-use std::{path::Path, time::Instant, marker::PhantomData};
+use std::{path::Path, marker::PhantomData};
 use compiler::Skeleton;
 use wgpu::util::DeviceExt;
 
@@ -12,9 +12,7 @@ pub struct Mesh<V: Vertex> {
 }
 impl Engine {
     pub fn load_mesh<V: Vertex>(&self, path: impl AsRef<Path>) -> Mesh<V> {
-        let start = Instant::now();
         let res = self.initialize_mesh(decode(&path));
-        info!("Mesh '{}' loaded in: {}ms", path.as_ref().display(), (Instant::now() - start).as_millis());
         res
     }
     pub fn initialize_mesh<V: Vertex>(&self, mesh: compiler::Mesh) -> Mesh<V> {
