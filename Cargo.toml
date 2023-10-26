@@ -3,8 +3,8 @@ edition = "2021"
 rust-version = "1.72"
 keywords = ["rust","3d","game","wgpu","mmo","rpg"]
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/muriel-guedes/nexodia"
-repository = "https://github.com/muriel-guedes/nexodia"
+homepage = "https://github.com/mberehulka/nexodia"
+repository = "https://github.com/mberehulka/nexodia"
 version = "1.0.0"
 authors = ["Muriel Guedes Pucci Berehulka"]
 
