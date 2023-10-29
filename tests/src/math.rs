@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, SquareMatrix, Vector4, Rotation3, Deg, Rad, Euler, Matrix3, Decomposed, VectorSpace, InnerSpace};
+use cgmath::{Matrix4, SquareMatrix, Vector4, Rotation3, Deg, Rad, Euler, Matrix3, Decomposed, VectorSpace, InnerSpace, Vector3};
 use math::{Mat4x4, Vec4, Quaternion, Transform, Vec3};
 
 #[test]
@@ -74,6 +74,18 @@ fn math() {
             Vec3::new(1.32, 12.1, 6.4)
         ).into()
     ));
+
+    let va = Vector3::new(0.5, 2., 1.);
+    let vb = Vec3::new(0.5, 2., 1.);
+    
+    assert!(compare_v(
+        proj_1 * va.extend(1.),
+        proj_2 * vb.extend(1.)
+    ));
+    assert!(compare_v(
+        (proj_1 * va.extend(1.)).truncate().extend(1.),
+        (proj_2 * vb).extend(1.)
+    ))
 }
 
 fn compare_v(a: Vector4<f32>, b: Vec4) -> bool {

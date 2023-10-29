@@ -172,3 +172,14 @@ impl From<Mat4x4> for Mat3x3 {
         Self::new(value.x.truncate(), value.y.truncate(), value.z.truncate())
     }
 }
+impl Mul<Vec3> for Mat4x4 {
+    type Output = Vec3;
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        (
+            self.x * rhs.x +
+            self.y * rhs.y +
+            self.z * rhs.z +
+            self.w * 1.
+        ).truncate()
+    }
+}
