@@ -175,11 +175,19 @@ impl From<Mat4x4> for Mat3x3 {
 impl Mul<Vec3> for Mat4x4 {
     type Output = Vec3;
     fn mul(self, rhs: Vec3) -> Self::Output {
-        (
-            self.x * rhs.x +
-            self.y * rhs.y +
-            self.z * rhs.z +
-            self.w * 1.
-        ).truncate()
+		let w = rhs.x * self.x.w + rhs.y * self.y.w + rhs.z * self.z.w + self.w.w;
+		if w == 0. {
+            Vec3::new(
+                rhs.x * self.x.x + rhs.y * self.y.x + rhs.z * self.z.x + self.w.x,
+                rhs.x * self.x.y + rhs.y * self.y.y + rhs.z * self.z.y + self.w.y,
+                rhs.x * self.x.z + rhs.y * self.y.z + rhs.z * self.z.z + self.w.z
+            )
+		} else {
+            Vec3::new(
+                (rhs.x * self.x.x + rhs.y * self.y.x + rhs.z * self.z.x + self.w.x) / w,
+                (rhs.x * self.x.y + rhs.y * self.y.y + rhs.z * self.z.y + self.w.y) / w,
+                (rhs.x * self.x.z + rhs.y * self.y.z + rhs.z * self.z.z + self.w.z) / w
+            )
+        }
     }
 }
