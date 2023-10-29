@@ -1,4 +1,4 @@
-use std::ops::{Sub, Add, Mul, Neg, MulAssign, AddAssign, SubAssign, DivAssign};
+use std::ops::{Sub, Add, Mul, Div, Neg, MulAssign, AddAssign, SubAssign, DivAssign};
 use bincode::{Decode, Encode};
 
 macro_rules! vec {
@@ -114,6 +114,50 @@ macro_rules! vec {
                 Self {$(
                     $field: self.$field * rhs
                 ),* }
+            }
+        }
+        impl Div<f32> for $name {
+            type Output = Self;
+            fn div(self, rhs: f32) -> Self::Output {
+                Self {$(
+                    $field: self.$field / rhs
+                ),* }
+            }
+        }
+        impl Add<f32> for $name {
+            type Output = Self;
+            fn add(self, rhs: f32) -> Self::Output {
+                Self {$(
+                    $field: self.$field + rhs
+                ),* }
+            }
+        }
+        impl Sub<f32> for $name {
+            type Output = Self;
+            fn sub(self, rhs: f32) -> Self::Output {
+                Self {$(
+                    $field: self.$field - rhs
+                ),* }
+            }
+        }
+        impl MulAssign<f32> for $name {
+            fn mul_assign(&mut self, rhs: f32) {
+                $(self.$field *= rhs;)*
+            }
+        }
+        impl AddAssign<f32> for $name {
+            fn add_assign(&mut self, rhs: f32) {
+                $(self.$field += rhs;)*
+            }
+        }
+        impl SubAssign<f32> for $name {
+            fn sub_assign(&mut self, rhs: f32) {
+                $(self.$field -= rhs;)*
+            }
+        }
+        impl DivAssign<f32> for $name {
+            fn div_assign(&mut self, rhs: f32) {
+                $(self.$field /= rhs;)*
             }
         }
         impl Mul<Self> for $name {
