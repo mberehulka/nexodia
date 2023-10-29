@@ -88,6 +88,14 @@ macro_rules! vec {
                 ),* }
             }
         }
+        impl Div<$name> for $name {
+            type Output = Self;
+            fn div(self, rhs: Self) -> Self::Output {
+                Self {$(
+                    $field: self.$field / rhs.$field
+                ),* }
+            }
+        }
         impl MulAssign for $name {
             fn mul_assign(&mut self, rhs: Self) {
                 $(self.$field *= rhs.$field;)*
