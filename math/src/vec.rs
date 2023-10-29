@@ -191,6 +191,9 @@ impl Vec3 {
     pub const fn extend(self, w: f32) -> Vec4 {
         Vec4::new(self.x, self.y, self.z, w)
     }
+    pub fn truncate(self) -> Vec2 {
+        Vec2::new(self.x, self.y)
+    }
 }
 impl Vec4 {
     pub fn truncate(self) -> Vec3 {
