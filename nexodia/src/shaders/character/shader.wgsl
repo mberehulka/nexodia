@@ -65,6 +65,6 @@ fn fs_main(vout: VertexOutput) -> @location(0) vec4<f32> {
         ((mat4x4_to_mat3x3(animator.joint[vout.joints[2]]) * vout.normal) * vout.weights[2]) +
         ((mat4x4_to_mat3x3(animator.joint[vout.joints[3]]) * vout.normal) * vout.weights[3])
     );
-    let normal_shadow = vec3<f32>(dot(normal, light.direction.xyz));
+    let normal_shadow = dot(normal, light.direction.xyz) * 0.5 + 0.5;
     return vec4<f32>(material.color.xyz * normal_shadow, 1.);
 }

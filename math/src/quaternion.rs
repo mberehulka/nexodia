@@ -1,12 +1,20 @@
-use std::ops::{Mul, Sub, Add, Neg};
+use std::{ops::{Mul, Sub, Add, Neg}, f32::consts::PI};
 use bincode::{Decode, Encode};
 
 use crate::{Vec3, Mat4x4, Mat3x3, Vec4};
 
-#[derive(Default, Copy, Clone, Encode, Decode)]
+#[derive(Copy, Clone, Encode, Decode)]
 pub struct Quaternion {
     pub v: Vec3,
     pub s: f32
+}
+impl Default for Quaternion {
+    fn default() -> Self {
+        Self {
+            v: Default::default(),
+            s: 1.
+        }
+    }
 }
 impl Quaternion {
     #[inline(always)]
@@ -37,7 +45,30 @@ impl Quaternion {
         )
     }
     #[inline(always)]
-    pub fn normalize(self) -> Self {
+    pub fn to_euler(&self) -> Vec3 {
+        let (qw, qx, qy, qz) = (self.s, self.v.x, self.v.y, self.v.z);
+        let (sqw, sqx, sqy, sqz) = (qw * qw, qx * qx, qy * qy, qz * qz);
+        let unit = sqx + sqz + sqy + sqw;
+        let test = qx * qz + qy * qw;
+        let half = 0.499 * unit;
+        if test > half {
+            Vec3::new(0.,  PI / 2., qx.atan2(qw) * 2.)
+        } else if test < -half {
+            Vec3::new(0., -PI / 2., -qx.atan2(qw) * 2.)
+        } else {
+            Vec3::new(
+                (2. * (-qy * qz + qx * qw)).atan2(1. - 2. * (sqx + sqy)),
+                (2. * ( qx * qz + qy * qw)).asin(),
+                (2. * (-qx * qy + qz * qw)).atan2(1. - 2. * (sqy + sqz))
+            )
+        }
+    }
+    #[inline(always)]
+    pub fn normalise(&mut self) {
+        *self = self.normalised()
+    }
+    #[inline(always)]
+    pub fn normalised(self) -> Self {
         self * (1. / self.dot(self).sqrt())
     }
     #[inline(always)]
@@ -49,11 +80,28 @@ impl Quaternion {
         self.dot(other).sqrt()
     }
     #[inline(always)]
-    pub fn lerp(self, mut other: Self, amount: f32) -> Self {
+    pub fn nlerp(self, mut other: Self, amount: f32) -> Self {
         if self.dot(other) < 0. {
             other = -other
         }
-        (self * (1. - amount) + other * amount).normalize()
+        (self * (1. - amount) + other * amount).normalised()
+    }
+    #[inline(always)]
+    pub fn slerp(self, mut other: Self, amount: f32) -> Self {
+        let mut dot = self.dot(other);
+        if dot < 0. {
+            other = -other;
+            dot = -dot;
+        }
+        if dot > 0.9995 {
+            self.nlerp(other, amount)
+        } else {
+            let robust_dot = dot.min(1.).max(-1.);
+            let theta = robust_dot.acos();
+            let scale1 = (theta * (1. - amount)).sin();
+            let scale2 = (theta * amount).sin();
+            (self * scale1 + other * scale2).normalised()
+        }
     }
     #[inline(always)]
     pub fn from_axis_angle(axis: Vec3, angle: f32) -> Self {
@@ -76,11 +124,6 @@ impl Quaternion {
         Self::from_vs(Vec3::new(0., 0., s), c)
     }
 }
-impl From<Vec3> for Quaternion {
-    fn from(Vec3 {x, y, z}: Vec3) -> Self {
-        Self::from_euler(x, y, z)
-    }
-}
 impl Mul<Vec3> for Quaternion {
     type Output = Vec3;
     fn mul(self, v: Vec3) -> Self::Output {
@@ -95,6 +138,11 @@ impl From<Quaternion> for [f32;4] {
             value.v.z,
             value.s
         ]
+    }
+}
+impl From<Quaternion> for Vec3 {
+    fn from(value: Quaternion) -> Self {
+        value.to_euler()
     }
 }
 impl From<Quaternion> for Mat4x4 {

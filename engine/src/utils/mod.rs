@@ -10,6 +10,8 @@ pub mod initialization;
 pub mod bgls;
 pub mod shaders;
 pub mod pressed_keys;
+pub mod animations;
+pub mod id;
 
 impl Engine {
     pub fn new_buffer(&self, contents: &[u8], usage: BufferUsages) -> Buffer {

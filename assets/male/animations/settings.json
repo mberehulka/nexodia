@@ -1,4 +1,5 @@
 {
     "compression_level": 12,
-    "animations": true
+    "animations": true,
+    "rotation": [-90, 0, 0]
 }

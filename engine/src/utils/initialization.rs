@@ -63,7 +63,7 @@ pub fn configure_surface(
         format: caps.formats.into_iter().find(|v| v.is_srgb()).unwrap(),
         width: window_size.width,
         height: window_size.height,
-        present_mode: wgpu::PresentMode::AutoVsync,
+        present_mode: wgpu::PresentMode::AutoNoVsync,
         alpha_mode: caps.alpha_modes.into_iter().next().unwrap(),
         view_formats: vec![]
     };

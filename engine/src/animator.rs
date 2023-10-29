@@ -1,12 +1,10 @@
-use std::{path::Path, sync::Arc};
-
+use std::sync::Arc;
 use compiler::Skeleton;
-use math::Transform;
+use math::{SimpleTransform, Vec3};
 use wgpu::{Buffer, util::DeviceExt};
-
 use crate::{Mesh, Vertex, Engine, Animation, AnimationFrame};
 
-pub const MAX_JOINTS: usize = 96;  // 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 48, 64, 96, 128, 256, 512, 1024, 2048, 4096
+pub const MAX_JOINTS: usize = 96;  // 16, 17, ..., 31, 32, 48, 64, 96, 128, 256, 512, 1024, 2048, 4096
 
 #[repr(C)]
 #[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
@@ -21,22 +19,18 @@ impl Default for AnimatorBindingFrame {
     }
 }
 
-pub struct Animator {
-    pub animations: Vec<Animation>,
+pub struct Animator<'s> {
     pub skeleton: Skeleton,
-    pub transform: Transform,
+    pub transform: SimpleTransform,
     pub buffer: Arc<Buffer>,
-    current_frame: AnimationFrame,
-    time: f32,
     pub speed: f32,
-    current_animation: usize,
-    next_animation: Option<usize>
+    pub frame: AnimationFrame,
+    pub animation: &'s Animation,
+    pub time: f32
 }
-impl Animator {
-    pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>, animations: Vec<Animation>) -> Self {
+impl<'s> Animator<'s> {
+    pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>, animation: &'s Animation) -> Self {
         Self {
-            current_frame: animations.first().unwrap().frames.first().unwrap().clone(),
-            animations,
             skeleton: mesh.skeleton.clone().unwrap(),
             transform: Default::default(),
             buffer: e.device.create_buffer_init(
@@ -46,65 +40,70 @@ impl Animator {
                     usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
                 }
             ).into(),
-            time: 0.,
             speed: 30.,
-            current_animation: 0,
-            next_animation: None
+            frame: animation.frames.first().unwrap().clone(),
+            animation,
+            time: 0.
         }
     }
-    pub fn set_animation(&mut self, animation: usize) {
-        if animation != self.current_animation {
-            self.current_animation = animation;
-            self.time  = 0.
+    fn finished(&self) -> bool {
+        self.time as usize >= self.animation.frames.len()
+    }
+    fn is_last_frame(&self) -> bool {
+        self.time as usize >= self.animation.frames.len().saturating_sub(1)
+    }
+    pub fn current_frame(&self) -> &AnimationFrame {
+        &self.animation.frames[self.time as usize]
+    }
+    fn next_frame(&self) -> &AnimationFrame {
+        &self.animation.frames[if self.is_last_frame() { 0 } else { self.time as usize + 1 }]
+    }
+    pub fn position(&self) -> Vec3 {
+        self.transform * self.frame.root.translation
+    }
+    pub fn transform(&self) -> SimpleTransform {
+        self.transform * self.frame.root
+    }
+    fn reset_animation(&mut self) {
+        self.time = 0.
+    }
+    pub fn set_animation(&mut self, animation: &'s Animation) {
+        if animation.id != self.animation.id {
+            self.reset_animation();
+            self.animation = animation
         }
     }
-    pub fn set_next_animation(&mut self, animation: usize) {
-        if animation != self.current_animation {
-            self.current_animation = animation;
-            self.time  = 0.
-        }
-    }
-    fn get_binding_frame(&mut self, e: &Engine) -> AnimatorBindingFrame {
-        let cur_animation = &self.animations[self.current_animation];
-        let delta_time = e.time.delta();
+    fn get_binding_frame(&mut self, delta_time: f32) -> AnimatorBindingFrame {
+        let mut cur_frame = self.current_frame().clone();
+        let next_frame = self.next_frame();
+        
+        cur_frame.lerp(&next_frame, self.time.fract());
+        self.frame.lerp(&cur_frame, delta_time * 10.);
 
-        // Update time
-        self.time += delta_time * self.speed;
-        if self.time as usize >= cur_animation.frames.len() - 1 {
-            if let Some(next_anim) = self.next_animation {
-                self.current_animation = next_anim;
-                self.next_animation = None
-            }
-            self.time = 0.
-        }
-        let time_frac = self.time - self.time.floor();
-        let time = self.time as usize;
+        let transform = self.transform * self.frame.root;
         
-        self.current_frame.lerp(&cur_animation.frames[time], time_frac);
-        
-        let transform = self.transform * self.current_frame.root.model_space;
-        
-        // Calculate global pose
         let mut binding_frame = AnimatorBindingFrame::default();
-        for i in 0..self.current_frame.joints.len() {
-            binding_frame.joints[i] = (transform * (self.current_frame.joints[i].model_space * self.skeleton.joints[i].ibm)).into()
+        for i in 0..cur_frame.joints.len() {
+            binding_frame.joints[i] = (transform * (self.frame.joints[i] * self.skeleton.joints[i].ibm)).into()
         }
         binding_frame
     }
+    fn update_time(&mut self, delta_time: f32) {
+        self.time += delta_time * self.speed;
+        if self.finished() {
+            self.reset_animation()
+        }
+    }
     pub fn update(&mut self, e: &Engine) {
-        let binding_frame = self.get_binding_frame(e);
+        let delta_time = e.time.delta();
+        let binding_frame = self.get_binding_frame(delta_time);
+        self.update_time(delta_time);
         e.queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&binding_frame))
     }
 }
 
-impl Engine {
-    pub fn load_animations<V: Vertex>(&self, mesh: &Mesh<V>, path: impl AsRef<Path>) -> Animator {
-        let animations = std::fs::read_dir(path.as_ref()).unwrap()
-            .into_iter()
-            .map(|path| path.unwrap().path())
-            .filter(|path| path.extension().unwrap().to_str().unwrap() == "bin")
-            .map(|path| self.load_animation(path))
-            .collect();
-        Animator::new(self, mesh, animations)
+impl<'s> Engine {
+    pub fn animator<V: Vertex>(&self, mesh: &Mesh<V>, animation: &'s Animation) -> Animator<'s> {
+        Animator::new(self, mesh, animation)
     }
 }

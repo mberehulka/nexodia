@@ -4,15 +4,23 @@ use engine::{Script, Engine, CameraBinding, Vec3, Mat4x4, Vec2};
 
 const CAM_MAX_ANG: f32 = FRAC_PI_2 - 0.1;
 
-pub struct Camera {
+pub struct FirstPersonCamera {
     e: &'static Engine,
+
     rotation: Vec3,
+    target_rotation: Vec3,
+    rotation_smoothness: f32,
+
     translation: Vec3,
+    translation_speed: Vec3,
+    target_translation: Vec3,
+    translation_smoothness: f32,
+    
     target: Vec3,
     cursor_movement: Vec2,
     cursor_speed: Vec2
 }
-impl Camera {
+impl FirstPersonCamera {
     pub fn new(e: &'static Engine) -> Self {
         e.center_window();
         e.center_cursor();
@@ -22,15 +30,23 @@ impl Camera {
         e.window.set_cursor_visible(false);
         Self {
             e,
+            
             rotation: Vec3::new(0., PI, 0.),
+            target_rotation: Vec3::new(0., PI, 0.),
+            rotation_smoothness: 20.,
+            
             translation: Vec3::new(0., 3., 2.),
+            translation_speed: [3.;3].into(),
+            target_translation: Vec3::new(0., 3., 2.),
+            translation_smoothness: 20.,
+            
             target: Default::default(),
             cursor_movement: Default::default(),
-            cursor_speed: Vec2::new(0.1, 0.1)
+            cursor_speed: Vec2::new(2., 2.)
         }
     }
 }
-impl Script for Camera {
+impl Script for FirstPersonCamera {
     fn event(&mut self, event: winit::event::Event<'static, ()>) {
         match event {
             Event::WindowEvent { event: WindowEvent::CursorMoved { position, .. }, .. } => {
@@ -46,25 +62,30 @@ impl Script for Camera {
     fn update(&mut self) {
         self.e.center_cursor();
 
-        let s = 3. * self.e.time.delta();
+        let s = self.e.time.delta();
 
-        self.rotation.y += self.cursor_movement.x * self.cursor_speed.y * s;
-        self.rotation.x = (self.rotation.x - self.cursor_speed.x * self.cursor_movement.y * s).min(CAM_MAX_ANG).max(-CAM_MAX_ANG);
+        self.target_rotation.y += self.cursor_movement.x * self.cursor_speed.y * s;
+        self.target_rotation.x = (self.target_rotation.x - self.cursor_movement.y * self.cursor_speed.x * s).min(CAM_MAX_ANG).max(-CAM_MAX_ANG);
 
-        if self.e.pressed_keys["E"] { self.translation.y += s }
-        else if self.e.pressed_keys["Q"] { self.translation.y -= s }
+        self.rotation.lerp(self.target_rotation, self.rotation_smoothness * s);
         
+        if self.e.pressed_keys["E"] { self.target_translation.y += self.translation_speed.y * s }
+        if self.e.pressed_keys["Q"] { self.target_translation.y -= self.translation_speed.y * s }
         if self.e.pressed_keys["W"] {
-            self.translation += Vec3::new(0., 0., 1.).rotate_y(self.rotation.y) * s
-        } else if self.e.pressed_keys["S"] {
-            self.translation -= Vec3::new(0., 0., 1.).rotate_y(self.rotation.y) * s
+            self.target_translation += Vec3::new(0., 0., self.translation_speed.z).rotate_y(self.rotation.y) * s
+        }
+        if self.e.pressed_keys["S"] {
+            self.target_translation -= Vec3::new(0., 0., self.translation_speed.z).rotate_y(self.rotation.y) * s
         }
         if self.e.pressed_keys["A"] {
-            self.translation += Vec3::new(1., 0., 0.).rotate_y(self.rotation.y) * s
-        } else if self.e.pressed_keys["D"] {
-            self.translation -= Vec3::new(1., 0., 0.).rotate_y(self.rotation.y) * s
+            self.target_translation += Vec3::new(self.translation_speed.x, 0., 0.).rotate_y(self.rotation.y) * s
+        }
+        if self.e.pressed_keys["D"] {
+            self.target_translation -= Vec3::new(self.translation_speed.x, 0., 0.).rotate_y(self.rotation.y) * s
         }
 
+        self.translation.lerp(self.target_translation, self.translation_smoothness * s);
+        
         let ws = self.e.window.inner_size();
         let aspect = ws.width as f32 / ws.height as f32;
         let proj = Mat4x4::perspective(aspect, aspect, 0.01, 100.);

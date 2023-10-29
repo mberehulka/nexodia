@@ -10,5 +10,4 @@
 
 wait
 
-echo "Compilation finished in $SECONDS seconds"
-# read -p "Compilation finished in $SECONDS seconds, press enter to exit..."
+read -p "Compilation finished in $SECONDS seconds, press enter to exit..."

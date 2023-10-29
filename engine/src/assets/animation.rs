@@ -1,31 +1,43 @@
 use std::path::Path;
-use math::Transform;
+use math::{SimpleTransform, Vec3};
 
-use crate::{Engine, Reader};
+use crate::{Engine, Reader, utils::id::{Id, IdT}};
 
-#[derive(Default, Clone)]
-pub struct AnimationJoint {
-    pub model_space: Transform   // model space joint matrix
-}
+static ID: Id = Id::default();
 
 #[derive(Default, Clone)]
-// Vector of Joints Transformation
 pub struct AnimationFrame {
-    pub root: AnimationJoint,
-    pub joints: Vec<AnimationJoint>
+    pub root: SimpleTransform,
+    pub joints: Vec<SimpleTransform>
 }
 impl AnimationFrame {
     pub fn lerp(&mut self, next: &Self, amount: f32) {
-        let joints_length = self.joints.len();
-        for i in 0..joints_length {
-            self.joints[i].model_space.lerp(next.joints[i].model_space, amount)
+        for i in 0..self.joints.len() {
+            self.joints[i].lerp(next.joints[i], amount)
         }
-        self.root.model_space.lerp(next.root.model_space, amount)
+        self.root.lerp(next.root, amount)
+    }
+    pub fn lerp_joints(&mut self, next: &Self, amount: f32) {
+        for i in 0..self.joints.len() {
+            self.joints[i].lerp(next.joints[i], amount)
+        }
     }
 }
 
 pub struct Animation {
-    pub frames: Vec<AnimationFrame>
+    pub id: IdT,
+    pub frames: Vec<AnimationFrame>,
+    pub keep_root_translation_axis: Vec3
+}
+impl Animation {
+    pub fn reset_start_position(&mut self) {
+        self.apply_root_translation(-self.frames.first().unwrap().root.translation)
+    }
+    pub fn apply_root_translation(&mut self, translation: Vec3) {
+        for frame in self.frames.iter_mut() {
+            frame.root.translation += translation
+        }
+    }
 }
 impl Engine {
     pub fn load_animation(&self, path: impl AsRef<Path>) -> Animation {
@@ -36,12 +48,14 @@ impl Engine {
         let frames = r.read_u32() as usize;
 
         Animation {
+            id: ID.next(),
             frames: (0..frames).map(|_| {
                 AnimationFrame {
-                    root: r.read_animation_joint(),
-                    joints: (0..joints).map(|_| r.read_animation_joint() ).collect()
+                    root: r.read_transform(),
+                    joints: (0..joints).map(|_| r.read_transform() ).collect()
                 }
-            }).collect()
+            }).collect(),
+            keep_root_translation_axis: Default::default()
         }
     }
 }

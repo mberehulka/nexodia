@@ -1,6 +1,7 @@
-import bpy, struct, os, time, zstd, json
+import bpy, struct, os, time, zstd, json, math
 from io import BufferedWriter
 from pathlib import Path
+from mathutils import Quaternion
 
 script_start = time.time()
 
@@ -9,21 +10,28 @@ os.makedirs("./assets", exist_ok=True)
 class Settings:
     compression_level = 12
     animations = False
+    rotation = Quaternion((0, 0, 0), 1)
     def __init__(self, p: Path):
         if p.exists():
             data = json.load(open(p))
-            if isinstance(data.get('compression_level'), int):
+            if "compression_level" in data:
                 self.compression_level = data["compression_level"]
-            if isinstance(data.get('animations'), bool):
+            if "animations" in data:
                 self.animations = data["animations"]
+            if "rotation" in data:
+                self.rotation = (
+                    Quaternion((1.0, 0.0, 0.0), math.radians(data["rotation"][0])) @
+                    Quaternion((0.0, 1.0, 0.0), math.radians(data["rotation"][1])) @
+                    Quaternion((0.0, 0.0, 1.0), math.radians(data["rotation"][2]))
+                )
 
 def write_u32(b: bytearray, v: any):
-    b.extend(v.to_bytes(4, byteorder='big', signed=False))
+    b.extend(v.to_bytes(4, byteorder="big", signed=False))
 def write_u8(b: bytearray, v: any):
     if v > 255: raise Exception("Value is bigger than 255")
-    b.extend(v.to_bytes(1, byteorder='big', signed=False))
+    b.extend(v.to_bytes(1, byteorder="big", signed=False))
 def write_str(b: bytearray, v: any):
-    b.extend(str.encode(str(v))+b'#')
+    b.extend(str.encode(str(v))+b"#")
 def write_vec3(b: bytearray, v: any):
     b.extend(struct.pack(">f", v.x)); b.extend(struct.pack(">f", v.y)); b.extend(struct.pack(">f", v.z))
 def write_vec4(b: bytearray, v: any):
@@ -37,7 +45,7 @@ def write_mat4x4_decomposed(b: bytearray, mat: any):
     translation, rotation, scale = mat.decompose()
     write_vec3(b, translation)
     write_vec4(b, rotation)
-    write_vec3(b, scale)
+    # write_vec3(b, scale)
 
 def get_armature():
     for object in bpy.data.objects:
@@ -59,7 +67,8 @@ def set_last_frame():
         bpy.context.scene.frame_end = int(keys[-1])
     else: raise Exception("No actions found")
 
-def export_frames(b: BufferedWriter):
+def export_frames(b: BufferedWriter, settings: Settings):
+    rotation = settings.rotation.to_matrix().to_4x4()
     write_u8(b, len(bpy.context.selected_pose_bones)) # Bones count
     frames = bpy.context.scene.frame_end
     write_u32(b, frames) # Frames count
@@ -67,7 +76,7 @@ def export_frames(b: BufferedWriter):
         bpy.context.scene.frame_set(frame)
         bpy.context.view_layer.update()
 
-        write_mat4x4_decomposed(b, bpy.context.object.matrix_local)
+        write_mat4x4_decomposed(b, rotation @ bpy.context.object.matrix_local)
 
         for bone in bpy.context.selected_pose_bones:
             # bone pose in local space
@@ -86,9 +95,9 @@ for path in Path("assets").glob("**/*.fbx"):
 
     b = bytearray(b"A")
 
-    bpy.ops.object.mode_set(mode='POSE')
+    bpy.ops.object.mode_set(mode="POSE")
     set_last_frame()
-    export_frames(b)
+    export_frames(b, settings)
     
     open(path.with_suffix(".bin"), "wb+")\
         .write(zstd.ZSTD_compress(bytes(b), settings.compression_level))

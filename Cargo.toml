@@ -15,6 +15,7 @@ members = [
     "compiler",
     "nexodia",
     "math",
+    "utils",
     "tests"
 ]
 

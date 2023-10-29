@@ -43,6 +43,15 @@ macro_rules! vec {
                     self.$field = self.$field + ((other.$field - self.$field) * amount)
                 );*
             }
+            paste::paste! {
+                $(
+                    #[inline(always)]
+                    pub fn [<with_$field>](mut self, value: f32) -> Self {
+                        self.$field = value;
+                        self
+                    }
+                )*
+            }
         }
         impl From<f32> for $name {
             fn from(v: f32) -> Self {

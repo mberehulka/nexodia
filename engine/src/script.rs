@@ -1,7 +1,7 @@
-use std::{sync::{Mutex, Arc, mpsc::{channel, Receiver}, atomic::AtomicU64}, thread::Thread, collections::HashMap};
+use std::{sync::{Mutex, Arc, mpsc::{channel, Receiver}}, thread::Thread, collections::HashMap};
 use winit::{event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode}, dpi::PhysicalSize};
 
-use crate::Engine;
+use crate::utils::id::{Id, IdT};
 
 #[allow(unused_variables)]
 pub trait Script: Send + Sync {
@@ -21,18 +21,20 @@ pub enum ThreadEvent {
 }
 
 #[derive(Clone)]
-pub struct ScriptThread {
-    pub id: u64,
+pub struct ScriptHandler {
+    id: IdT,
+    scripts: &'static Scripts,
     thread: Thread,
     events: Arc<Mutex<Vec<ThreadEvent>>>,
     rx: Arc<Mutex<Receiver<()>>>
 }
-impl ScriptThread {
-    pub fn new<S: Script + 'static>(mut script: S, id: u64) -> ScriptThread {
+impl ScriptHandler {
+    pub fn new<S: Script + 'static>(scripts: &'static Scripts, mut script: S, id: IdT) -> Self {
         let events = Arc::new(Mutex::new(Vec::<ThreadEvent>::new()));
         let (tx, rx) = channel();
-        ScriptThread {
+        Self {
             id,
+            scripts,
             events: events.clone(),
             thread: std::thread::spawn(move || {
                 loop {
@@ -63,7 +65,8 @@ impl ScriptThread {
                         std::thread::park()
                     }
                 }
-                script.dropped()
+                script.dropped();
+                info!("Thread {id} dropped")
             }).thread().clone().into(),
             rx: Arc::new(Mutex::new(rx))
         }
@@ -76,26 +79,29 @@ impl ScriptThread {
         self.send(ThreadEvent::Ready);
         self.rx.lock().unwrap().recv().ok();
     }
-    pub fn drop(&self) {
-        self.send(ThreadEvent::Close);
-        self.wait()
+}
+
+impl Drop for ScriptHandler {
+    fn drop(&mut self) {
+        self.scripts.remove(self)
     }
 }
 
+static ID: Id = Id::default();
+
 #[derive(Default)]
 pub struct Scripts {
-    pub(crate) threads: Mutex<HashMap<u64, ScriptThread>>,
-    id: AtomicU64
+    pub(crate) threads: Mutex<HashMap<IdT, ScriptHandler>>
 }
-impl Engine {
-    pub fn add_script<S: Script + 'static>(&'static self, script: S) -> ScriptThread {
-        let id = self.scripts.id.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-        let thread = ScriptThread::new(script, id);
-        self.scripts.threads.lock().unwrap().insert(id, thread.clone());
-        thread
+impl Scripts {
+    pub fn add<S: Script + 'static>(&'static self, script: S) -> ScriptHandler {
+        let id = ID.next();
+        let handler = ScriptHandler::new(&self, script, id);
+        self.threads.lock().unwrap().insert(id, handler.clone());
+        handler
     }
-    pub fn remove_script(&self, st: ScriptThread) {
+    pub fn remove(&self, st: &ScriptHandler) {
         st.send(crate::ThreadEvent::Close);
-        self.scripts.threads.lock().unwrap().remove(&st.id).expect("Thread already removed");
+        self.threads.lock().unwrap().remove(&st.id).expect("Thread already removed");
     }
 }

@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, SquareMatrix, Vector4, Rotation3, Deg, Rad, Euler, Matrix3, Decomposed, VectorSpace};
+use cgmath::{Matrix4, SquareMatrix, Vector4, Rotation3, Deg, Rad, Euler, Matrix3, Decomposed, VectorSpace, InnerSpace};
 use math::{Mat4x4, Vec4, Quaternion, Transform, Vec3};
 
 #[test]
@@ -32,16 +32,17 @@ fn math() {
     assert!(compare(q1.into(), q2.into()));
     assert!(compare_quat(q1 * q1, q2 * q2));
 
-    let pq1 = cgmath::Quaternion::from(Matrix3 { x: proj_1.x.truncate(), y: proj_1.y.truncate(), z: proj_1.z.truncate() });
-    let pq2 = Quaternion::from(proj_2);
+    let mut pq1 = cgmath::Quaternion::from(Matrix3 { x: proj_1.x.truncate(), y: proj_1.y.truncate(), z: proj_1.z.truncate() });
+    let mut pq2 = Quaternion::from(proj_2);
     assert!(compare_quat(pq1, pq2));
+    assert!(compare_quat(pq1.normalize(), pq2.normalised()));
 
     assert!(compare_quat(cgmath::Quaternion::from_angle_x(Rad(1.2)), Quaternion::from_angle_x(1.2)));
     assert!(compare_quat(cgmath::Quaternion::from_angle_y(Rad(1.2)), Quaternion::from_angle_y(1.2)));
     assert!(compare_quat(cgmath::Quaternion::from_angle_z(Rad(1.2)), Quaternion::from_angle_z(1.2)));
 
     let q1 = q1.nlerp(q1*2., 0.5);
-    let q2 = q2.lerp(q2*2., 0.5);
+    let q2 = q2.nlerp(q2*2., 0.5);
     assert!(compare_quat(q1, q2));
 
     assert!(compare(

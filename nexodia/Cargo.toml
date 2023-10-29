@@ -15,3 +15,4 @@ winit.workspace = true
 wgpu.workspace = true
 bytemuck.workspace = true
 engine.path = "../engine"
+utils.path = "../utils"

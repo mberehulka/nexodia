@@ -14,18 +14,19 @@
         },
         {
             "label": "B",
-            "command": "./compiler/compile.ssh",
+            "command": "./compiler/compile.sh",
             "type": "shell",
             "presentation": {
                 "reveal": "always",
                 "clear": true,
-                "panel": "shared"
+                "panel": "shared",
+                "close": true
             },
             "group": "build"
         },
         {
             "label": "Convert VRM to FBX",
-            "command": "blender --background --python './compiler/blender/vrm to fbx.py'",
+            "command": "blender --background --python ./compiler/blender/prepare_vrm.py",
             "type": "shell",
             "presentation": {
                 "reveal": "always",
