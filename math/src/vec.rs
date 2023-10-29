@@ -206,3 +206,8 @@ impl Vec4 {
         }
     }
 }
+impl Vec2 {
+    pub fn cross(self, v: Self) -> f32 {
+        self.x * v.y - self.y * v.x
+    }
+}
