@@ -24,6 +24,45 @@ impl Transform {
         Self { translation, rotation, scale }
     }
     #[inline(always)]
+    pub const fn from_translation(x: f32, y: f32, z: f32) -> Self {
+        Self {
+            translation: Vec3::new(x, y, z),
+            rotation: Quaternion::new(0., 0., 0., 1.),
+            scale: Vec3::new(0., 0., 0.)
+        }
+    }
+    #[inline(always)]
+    pub const fn from_rotation(rotation: Quaternion) -> Self {
+        Self {
+            translation: Vec3::new(0., 0., 0.),
+            rotation,
+            scale: Vec3::new(0., 0., 0.)
+        }
+    }
+    #[inline(always)]
+    pub const fn from_scale(x: f32, y: f32, z: f32) -> Self {
+        Self {
+            translation: Vec3::new(0., 0., 0.),
+            rotation: Quaternion::new(0., 0., 0., 1.),
+            scale: Vec3::new(x, y, z)
+        }
+    }
+    #[inline(always)]
+    pub const fn with_translation(mut self, x: f32, y: f32, z: f32) -> Self {
+        self.translation = Vec3::new(x, y, z);
+        self
+    }
+    #[inline(always)]
+    pub const fn with_rotation(mut self, rotation: Quaternion) -> Self {
+        self.rotation = rotation;
+        self
+    }
+    #[inline(always)]
+    pub const fn with_scale(mut self, x: f32, y: f32, z: f32) -> Self {
+        self.scale = Vec3::new(x, y, z);
+        self
+    }
+    #[inline(always)]
     pub fn lerp(&mut self, other: Self, amount: f32) {
         self.translation.lerp(other.translation, amount);
         self.rotation = self.rotation.nlerp(other.rotation, amount);
