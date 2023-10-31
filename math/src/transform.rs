@@ -28,7 +28,7 @@ impl Transform {
         Self {
             translation: Vec3::new(x, y, z),
             rotation: Quaternion::new(0., 0., 0., 1.),
-            scale: Vec3::new(0., 0., 0.)
+            scale: Vec3::new(1., 1., 1.)
         }
     }
     #[inline(always)]
@@ -36,7 +36,7 @@ impl Transform {
         Self {
             translation: Vec3::new(0., 0., 0.),
             rotation,
-            scale: Vec3::new(0., 0., 0.)
+            scale: Vec3::new(1., 1., 1.)
         }
     }
     #[inline(always)]
