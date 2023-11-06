@@ -1,48 +1,46 @@
-use std::{f32::consts::FRAC_PI_2, sync::{Arc, Mutex}};
+use std::{f32::consts::FRAC_PI_2, sync::{Mutex, Arc}};
+use utils::Lerp;
 use winit::event::{WindowEvent, Event};
-use engine::{Script, Engine, CameraBinding, Vec3, Mat4x4, Vec2, Quaternion};
-
-use crate::Lerp;
+use engine::{Script, Engine, CameraBinding, Vec3, Mat4x4, Vec2, Quaternion, ScriptHandler};
 
 const CAM_MAX_ANG: f32 = FRAC_PI_2 - 0.1;
 
 #[derive(Default, Clone)]
-pub struct TPCValues {
+pub struct CameraValues {
     pub target: Arc<Mutex<Vec3>>,
     pub direction: Arc<Mutex<f32>>
 }
 
 pub struct ThirdPersonCamera {
     e: &'static Engine,
-    values: TPCValues,
+    pub values: CameraValues,
     cursor_movement: Vec2,
     cursor_speed: Vec2,
     rotation: Lerp<Vec2>,
     distance: Lerp<f32>
 }
 impl ThirdPersonCamera {
-    pub fn new(e: &'static Engine) -> (Self, TPCValues) {
+    pub fn new(e: &'static Engine) -> (ScriptHandler, CameraValues) {
         e.center_window();
         e.center_cursor();
         e.window.set_cursor_grab(winit::window::CursorGrabMode::Confined).ok();
         e.window.set_ime_allowed(true);
         e.window.set_cursor_visible(false);
         e.window.focus_window();
-        let values = TPCValues::default();
-        (
-            Self {
-                e,
-                values: values.clone(),
-                cursor_movement: Default::default(),
-                cursor_speed: Vec2::new(2., 2.),
-                rotation: Lerp::new(Vec2::new(0., 0.), 20.),
-                distance: Lerp::new(2., 0.1)
-            },
-            values
-        )
+        let values = CameraValues::default();
+        let sh = e.scripts.add(Self {
+            e,
+            values: values.clone(),
+            cursor_movement: Default::default(),
+            cursor_speed: Vec2::new(2., 2.),
+            rotation: Lerp::new(Vec2::new(0., 0.), 20.),
+            distance: Lerp::new(2., 0.1)
+        });
+        (sh, values)
     }
 }
 impl Script for ThirdPersonCamera {
+    fn name() -> &'static str { "ThirdPersonCamera" }
     fn event(&mut self, event: winit::event::Event<'static, ()>) {
         match event {
             Event::WindowEvent { event: WindowEvent::CursorMoved { position, .. }, .. } => {
@@ -66,12 +64,7 @@ impl Script for ThirdPersonCamera {
         *self.values.direction.lock().unwrap() = self.rotation.y;
         let rotation = Quaternion::from_angle_y(self.rotation.y) * Quaternion::from_angle_x(-self.rotation.x);
 
-        let mut target = {
-            let t = self.values.target.lock().unwrap();
-            let res = t.clone();
-            drop(t);
-            res
-        };
+        let mut target = *self.values.target.lock().unwrap();
         target.y += 1.;
 
         let position = target + rotation * Vec3::new(0., 0., *self.distance);

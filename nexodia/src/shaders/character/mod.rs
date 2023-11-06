@@ -1,5 +1,5 @@
 use engine::{vertex::*, Engine, Animator, Light};
-use wgpu::{Device, BindGroupLayout, BindGroup, Buffer, util::DeviceExt};
+use wgpu::{Device, BindGroupLayout, BindGroup, util::DeviceExt};
 
 pub fn bgl(device: &Device) -> BindGroupLayout {
     device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -45,16 +45,15 @@ pub struct MaterialBinding {
     pub color: [f32;4]
 }
 pub struct Material {
-    buffer: Buffer,
     bg: BindGroup
 }
 impl Material {
-    pub fn new(e: &Engine, animator: &Animator, light: &Light) -> Self {
+    pub fn new(e: &Engine, animator: &Animator, light: &Light, color: [f32;4]) -> Self {
         let buffer = e.device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
                 label: None,
                 contents: bytemuck::bytes_of(&MaterialBinding {
-                    color: [1.;4]
+                    color
                 }),
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST
             }
@@ -77,12 +76,8 @@ impl Material {
                         resource: light.buffer.as_entire_binding()
                     }
                 ]
-            }),
-            buffer: buffer
+            })
         }
-    }
-    pub fn update(&self, e: &Engine, value: MaterialBinding) {
-        e.queue.write_buffer(&self.buffer, 0, bytemuck::bytes_of(&value))
     }
 }
 impl engine::Material for Material {

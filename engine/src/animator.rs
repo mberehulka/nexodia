@@ -20,7 +20,7 @@ impl Default for AnimatorBindingFrame {
 }
 
 pub struct Animator<'s> {
-    pub skeleton: Skeleton,
+    pub skeleton: Arc<Skeleton>,
     pub transform: SimpleTransform,
     pub buffer: Arc<Buffer>,
     pub speed: f32,
@@ -31,7 +31,7 @@ pub struct Animator<'s> {
 impl<'s> Animator<'s> {
     pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>, animation: &'s Animation) -> Self {
         Self {
-            skeleton: mesh.skeleton.clone().unwrap(),
+            skeleton: mesh.skeleton.as_ref().unwrap().clone(),
             transform: Default::default(),
             buffer: e.device.create_buffer_init(
                 &wgpu::util::BufferInitDescriptor {

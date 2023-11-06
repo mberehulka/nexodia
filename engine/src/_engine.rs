@@ -5,7 +5,7 @@ use winit::{
     event_loop::{ControlFlow, EventLoop}, window::Window, dpi::PhysicalSize
 };
 
-use crate::{Camera, Logger, Time, utils::{initialization::*, pressed_keys::PressedKeys}, Scripts};
+use crate::{CameraBuffer, Logger, Time, utils::{initialization::*, pressed_keys::PressedKeys}, Scripts};
 
 pub struct Engine {
     pub window: Window,
@@ -17,7 +17,7 @@ pub struct Engine {
     pub surface_config: Mutex<SurfaceConfiguration>,
     pub exit: AtomicBool,
     pub pressed_keys: PressedKeys,
-    pub camera: Camera,
+    pub camera_buffer: CameraBuffer,
     pub time: Time,
     pub scripts: Scripts
 }
@@ -31,7 +31,7 @@ impl Engine {
         let adapter = new_adapter(&instance, &surface);
         let (device, queue) = new_device(&adapter);
         let surface_config = configure_surface(window.inner_size(), &device, &adapter, &surface);
-        let camera = Camera::new(&device);
+        let camera_buffer = CameraBuffer::new(&device);
         let s = Self {
             window,
             instance: instance,
@@ -42,7 +42,7 @@ impl Engine {
             adapter: adapter,
             exit: Default::default(),
             pressed_keys: Default::default(),
-            camera,
+            camera_buffer,
             time: Time::new(),
             scripts: Default::default()
         };
@@ -87,11 +87,5 @@ impl Engine {
     }
     pub fn exit(&self) {
         self.exit.store(true, std::sync::atomic::Ordering::Relaxed)
-    }
-}
-
-impl Drop for Engine {
-    fn drop(&mut self) {
-        
     }
 }

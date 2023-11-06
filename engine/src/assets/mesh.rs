@@ -1,14 +1,15 @@
-use std::{path::Path, marker::PhantomData};
+use std::{path::Path, marker::PhantomData, sync::Arc};
 use compiler::Skeleton;
 use wgpu::util::DeviceExt;
 
 use crate::{Engine, Vertex, decode};
 
+#[derive(Clone)]
 pub struct Mesh<V: Vertex> {
     vertex_type: PhantomData<V>,
-    pub vertices_buffer: wgpu::Buffer,
+    pub vertices_buffer: Arc<wgpu::Buffer>,
     pub vertices_len: u32,
-    pub skeleton: Option<Skeleton>
+    pub skeleton: Option<Arc<Skeleton>>
 }
 impl Engine {
     pub fn load_mesh<V: Vertex>(&self, path: impl AsRef<Path>) -> Mesh<V> {
@@ -32,7 +33,7 @@ impl Engine {
             vertex_type: PhantomData::default(),
             vertices_buffer: vertices_buffer.into(),
             vertices_len,
-            skeleton: mesh.skeleton.into()
+            skeleton: if let Some(skeleton) = mesh.skeleton { Some(skeleton.into()) } else { None }
         }
     }
 }

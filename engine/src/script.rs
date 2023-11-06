@@ -4,7 +4,8 @@ use winit::{event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyC
 use crate::utils::id::{Id, IdT};
 
 #[allow(unused_variables)]
-pub trait Script: Send + Sync {
+pub trait Script: Send {
+    fn name() -> &'static str { "Unknow" }
     fn event(&mut self, event: Event<'static, ()>) {}
     fn update(&mut self) {}
     fn render(&mut self) {}
@@ -14,6 +15,7 @@ pub trait Script: Send + Sync {
     fn dropped(&mut self){}
 }
 
+#[derive(Debug)]
 pub enum ThreadEvent {
     Event(Event<'static, ()>),
     Ready,
@@ -66,7 +68,7 @@ impl ScriptHandler {
                     }
                 }
                 script.dropped();
-                info!("Thread {id} dropped")
+                info!("Script: {}, thread: {id}, dropped", S::name())
             }).thread().clone().into(),
             rx: Arc::new(Mutex::new(rx))
         }
@@ -78,6 +80,10 @@ impl ScriptHandler {
     pub fn wait(&self) {
         self.send(ThreadEvent::Ready);
         self.rx.lock().unwrap().recv().ok();
+    }
+    /// Make this script static to prevent it from dropping and closing it's thread.
+    pub fn make_static(self) -> &'static Self {
+        Box::leak(Box::new(self))
     }
 }
 
@@ -100,8 +106,21 @@ impl Scripts {
         self.threads.lock().unwrap().insert(id, handler.clone());
         handler
     }
+    /// Do not call this directly, threads are automatically destroyed when instance is dropped, call drop() instead.
+    /// 
+    /// ```
+    /// pub struct TestScript {}
+    /// impl Script for TestScript {}
+    /// ...
+    /// let test = engine.scripts.add(TestScript {});
+    /// drop(test);
+    /// ```
     pub fn remove(&self, st: &ScriptHandler) {
-        st.send(crate::ThreadEvent::Close);
-        self.threads.lock().unwrap().remove(&st.id).expect("Thread already removed");
+        let mut threads = self.threads.lock().unwrap();
+        let thread = threads.remove(&st.id);
+        drop(threads);
+        if let Some(thread) = thread {
+            thread.send(crate::ThreadEvent::Close)
+        }
     }
 }

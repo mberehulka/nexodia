@@ -1,14 +1,17 @@
 #[macro_export]
 macro_rules! load_animations {
-    ($({
-        $path: literal,
-        $name: ident,
-        $reset_start_position: expr
-    })*) => {
-        pub struct Animations {
+    (
+        $struct_name: ident,
+        $({
+            $path: literal,
+            $name: ident,
+            $reset_start_position: expr
+        })*
+    ) => {
+        pub struct $struct_name {
             $($name: &'static engine::Animation),*
         }
-        impl Animations {
+        impl $struct_name {
             pub fn new(e: &'static engine::Engine) -> Self {
                 $(
                     let $name = Box::leak(Box::new(e.load_animation(

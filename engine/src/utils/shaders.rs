@@ -106,7 +106,7 @@ macro_rules! shader {
                         $($vbs),*
                     ],
                     &[
-                        &e.camera.bgl,
+                        &e.camera_buffer.bgl,
                         $(&$bgls(&e.device)),*
                     ]
                 ))

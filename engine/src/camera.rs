@@ -9,12 +9,12 @@ pub struct CameraBinding {
     pub position: [f32;4]
 }
 
-pub struct Camera {
+pub struct CameraBuffer {
     buffer: wgpu::Buffer,
     pub bind_group: wgpu::BindGroup,
     pub bgl: wgpu::BindGroupLayout
 }
-impl Camera {
+impl CameraBuffer {
     pub fn new(device: &Device) -> Self {
         let buffer = device.create_buffer_init(
             &wgpu::util::BufferInitDescriptor {
@@ -56,6 +56,6 @@ impl Camera {
 }
 impl Engine {
     pub fn update_camera_buffer(&self, buffer: CameraBinding) {
-        self.queue.write_buffer(&self.camera.buffer, 0, bytemuck::cast_slice(&[buffer]))
+        self.queue.write_buffer(&self.camera_buffer.buffer, 0, bytemuck::cast_slice(&[buffer]))
     }
 }
