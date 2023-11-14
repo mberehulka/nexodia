@@ -1,4 +1,4 @@
-use cgmath::{Matrix4, SquareMatrix, Vector4, Rotation3, Deg, Rad, Euler, Matrix3, Decomposed, VectorSpace, InnerSpace, Vector3};
+use cgmath::{Matrix4, SquareMatrix, Vector4, Rotation3, Deg, Rad, Euler, Matrix3, Decomposed, VectorSpace, InnerSpace, Vector3, Ortho};
 use math::{Mat4x4, Vec4, Quaternion, Transform, Vec3};
 
 #[test]
@@ -82,10 +82,14 @@ fn math() {
         proj_1 * va.extend(1.),
         proj_2 * vb.extend(1.)
     ));
-    assert!(compare_v(
-        (proj_1 * va.extend(1.)).truncate().extend(1.),
-        (proj_2 * vb).extend(1.)
-    ))
+    assert!(compare(
+        Matrix4::from(Ortho {
+            left: 0., right: 1.,
+            bottom: -2., top: 2.,
+            near: -1.2, far: 2.5
+        }),
+        Mat4x4::orthographic(0., 1., -2., 2., -1.2, 2.5)
+    ));
 }
 
 fn compare_v(a: Vector4<f32>, b: Vec4) -> bool {

@@ -1,8 +1,7 @@
 use std::{path::Path, sync::Arc};
-
 use wgpu::{
     Extent3d, TextureDimension, TextureFormat, TextureViewDescriptor, SamplerDescriptor,
-    AddressMode, FilterMode, CompareFunction, TextureView, Sampler, Device, TextureDescriptor, BindGroup, SurfaceConfiguration
+    TextureView, Sampler, Device, TextureDescriptor, BindGroup, TextureUsages
 };
 
 use crate::{Engine, decode};
@@ -121,33 +120,30 @@ pub struct DepthTexture {
     pub sampler: Sampler
 }
 impl DepthTexture {
-    pub fn new(device: &Device, surface_config: &SurfaceConfiguration) -> Self {
+    pub fn new(device: &Device, width: u32, height: u32, usage: TextureUsages) -> Self {
         let texture = device.create_texture(&TextureDescriptor {
             label: None,
             size: Extent3d {
-                width: surface_config.width,
-                height: surface_config.height,
+                width,
+                height,
                 depth_or_array_layers: 1
             },
             mip_level_count: 1,
             sample_count: 1,
             dimension: TextureDimension::D2,
             format: DEPTH_FORMAT,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
+            usage,
             view_formats: &[]
         });
         let view = texture.create_view(&TextureViewDescriptor::default());
         let sampler = device.create_sampler(
             &SamplerDescriptor {
-                address_mode_u: AddressMode::ClampToEdge,
-                address_mode_v: AddressMode::ClampToEdge,
-                address_mode_w: AddressMode::ClampToEdge,
-                mag_filter: FilterMode::Linear,
-                min_filter: FilterMode::Linear,
-                mipmap_filter: FilterMode::Nearest,
-                compare: Some(CompareFunction::LessEqual),
-                lod_min_clamp: 0.0,
-                lod_max_clamp: 100.0,
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Nearest,
+                mipmap_filter: wgpu::FilterMode::Nearest,
                 ..Default::default()
             }
         );
@@ -158,29 +154,24 @@ impl DepthTexture {
         }
     }
 }
-impl Engine {
-    pub fn new_depth_texture(&self) -> DepthTexture {
-        DepthTexture::new(&self.device, &self.surface_config.lock().unwrap())
-    }
-}
 
 pub struct OutputTexture {
     pub texture: wgpu::Texture,
     pub view: TextureView
 }
 impl OutputTexture {
-    pub fn new(device: &Device, surface_config: &SurfaceConfiguration) -> Self {
+    pub fn new(device: &Device, width: u32, height: u32, format: TextureFormat) -> Self {
         let texture = device.create_texture(&TextureDescriptor {
             label: None,
             size: Extent3d {
-                width: surface_config.width,
-                height: surface_config.height,
+                width,
+                height,
                 depth_or_array_layers: 1
             },
             mip_level_count: 1,
             sample_count: 1,
             dimension: TextureDimension::D2,
-            format: surface_config.format,
+            format,
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[]
         });
@@ -189,10 +180,5 @@ impl OutputTexture {
             texture,
             view
         }
-    }
-}
-impl Engine {
-    pub fn new_output_texture(&self) -> OutputTexture {
-        OutputTexture::new(&self.device, &self.surface_config.lock().unwrap())
     }
 }

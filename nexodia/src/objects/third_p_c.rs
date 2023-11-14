@@ -15,7 +15,7 @@ pub struct ThirdPersonCamera {
     e: &'static Engine,
     pub values: CameraValues,
     cursor_movement: Vec2,
-    cursor_speed: Vec2,
+    mouse_sensitivity: Vec2,
     rotation: Lerp<Vec2>,
     distance: Lerp<f32>
 }
@@ -32,8 +32,8 @@ impl ThirdPersonCamera {
             e,
             values: values.clone(),
             cursor_movement: Default::default(),
-            cursor_speed: Vec2::new(2., 2.),
-            rotation: Lerp::new(Vec2::new(0., 0.), 20.),
+            mouse_sensitivity: Vec2::new(0.003, 0.003),
+            rotation: Lerp::new(Vec2::new(0., 0.), 10.),
             distance: Lerp::new(2., 0.1)
         });
         (sh, values)
@@ -48,7 +48,7 @@ impl Script for ThirdPersonCamera {
                 self.cursor_movement = Vec2::new(
                     position.x as f32 - ws.width as f32 / 2.,
                     position.y as f32 - ws.height as f32 / 2.
-                )
+                ) * self.mouse_sensitivity
             }
             _ => {}
         }
@@ -58,8 +58,9 @@ impl Script for ThirdPersonCamera {
 
         let s = self.e.time.delta();
 
-        self.rotation.target.y -= self.cursor_movement.x * self.cursor_speed.y * s;
-        self.rotation.target.x = (self.rotation.target.x - self.cursor_movement.y * self.cursor_speed.x * s).min(CAM_MAX_ANG).max(-CAM_MAX_ANG);
+        self.rotation.target.y -= self.cursor_movement.x;
+        self.rotation.target.x -= self.cursor_movement.y;
+        self.rotation.target.x = self.rotation.target.x.min(CAM_MAX_ANG).max(-CAM_MAX_ANG);
         self.rotation.lerp(s);
         *self.values.direction.lock().unwrap() = self.rotation.y;
         let rotation = Quaternion::from_angle_y(self.rotation.y) * Quaternion::from_angle_x(-self.rotation.x);

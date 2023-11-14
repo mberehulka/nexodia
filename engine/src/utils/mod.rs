@@ -12,6 +12,7 @@ pub mod shaders;
 pub mod pressed_keys;
 pub mod animations;
 pub mod id;
+pub mod join_structs;
 
 impl Engine {
     pub fn new_buffer(&self, contents: &[u8], usage: BufferUsages) -> Buffer {

@@ -1,9 +1,11 @@
 use std::{f32::consts::PI, sync::Arc};
-use engine::{Script, Engine, Object, utils::Color, Animator, Light, Quaternion, Vec3, ScriptHandler, Mesh};
+use engine::{Script, Engine, utils::Color, Animator, Light, Quaternion, Vec3, Mesh};
 
-use crate::{CameraValues, shaders::character::{Material, Shader}};
+use crate::{CameraValues, shaders::character};
 
-type Vertex = <Shader as engine::Shader>::Vertex;
+use super::Character;
+
+type Vertex = <character::main::Shader as engine::Shader>::Vertex;
 
 load_animations!(
     CharacterAnimations,
@@ -27,10 +29,14 @@ impl<'s> MainCharacter<'s> {
         mesh: Mesh<Vertex>,
         light: &Light,
         camera_values: CameraValues
-    ) -> (ScriptHandler, Object<Shader>) {
+    ) -> Character {
         let animator = e.animator(&mesh, animations.idle);
         let object = e.create_object(
-            Material::new(e, &animator, light, Color::from("#d69f7e").into()),
+            character::main::Material::new(e, &animator, light, Color::from("#d69f7e").into()),
+            mesh.clone()
+        );
+        let object_light = e.create_object(
+            character::dir_light::Material::new(e, &animator, light),
             mesh
         );
         let script = e.scripts.add(MainCharacter {
@@ -39,7 +45,11 @@ impl<'s> MainCharacter<'s> {
             camera_values,
             animator
         });
-        (script, object)
+        Character {
+            script,
+            main: object,
+            dir_light: object_light
+        }
     }
 }
 impl<'s> Script for MainCharacter<'s> {

@@ -106,6 +106,24 @@ impl Mat4x4 {
             Vec4::new(0., 0., 0., 1.)
         )
     }
+    #[inline(always)]
+    pub fn orthographic(
+        left: f32,   right: f32,
+        bottom: f32, top: f32,
+        near: f32,   far: f32
+    ) -> Self {
+        Self {
+            x: Vec4::new(2. / (right - left), 0., 0., 0.),
+            y: Vec4::new(0., 2. / (top - bottom), 0., 0.),
+            z: Vec4::new(0., 0.,  -2. / (far - near), 0.),
+            w: Vec4::new(
+                -(right + left) / (right - left),
+                -(top + bottom) / (top - bottom),
+                -(far + near) / (far - near),
+                1.
+            )
+        }
+    }
 }
 
 impl Mul<Mat4x4> for Mat4x4 {
@@ -170,24 +188,5 @@ impl Mul<Vec4> for Mat4x4 {
 impl From<Mat4x4> for Mat3x3 {
     fn from(value: Mat4x4) -> Self {
         Self::new(value.x.truncate(), value.y.truncate(), value.z.truncate())
-    }
-}
-impl Mul<Vec3> for Mat4x4 {
-    type Output = Vec3;
-    fn mul(self, rhs: Vec3) -> Self::Output {
-		let w = rhs.x * self.x.w + rhs.y * self.y.w + rhs.z * self.z.w + self.w.w;
-		if w == 0. {
-            Vec3::new(
-                rhs.x * self.x.x + rhs.y * self.y.x + rhs.z * self.z.x + self.w.x,
-                rhs.x * self.x.y + rhs.y * self.y.y + rhs.z * self.z.y + self.w.y,
-                rhs.x * self.x.z + rhs.y * self.y.z + rhs.z * self.z.z + self.w.z
-            )
-		} else {
-            Vec3::new(
-                (rhs.x * self.x.x + rhs.y * self.y.x + rhs.z * self.z.x + self.w.x) / w,
-                (rhs.x * self.x.y + rhs.y * self.y.y + rhs.z * self.z.y + self.w.y) / w,
-                (rhs.x * self.x.z + rhs.y * self.y.z + rhs.z * self.z.z + self.w.z) / w
-            )
-        }
     }
 }

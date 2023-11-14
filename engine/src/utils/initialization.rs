@@ -5,8 +5,11 @@ use crate::Engine;
 
 pub fn new_instance() -> wgpu::Instance {
     wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::all() - wgpu::Backends::GL,
-        dx12_shader_compiler: Dx12Compiler::Fxc
+        backends: wgpu::Backends::VULKAN,
+        dx12_shader_compiler: Dx12Compiler::Dxc {
+            dxil_path: Some("assets/libs/dxil.dll".into()),
+            dxc_path: Some("assets/libs/dxc.exe".into())
+        }
     })
 }
 
@@ -34,7 +37,7 @@ pub fn new_adapter(instance: &Instance, surface: &Surface) -> Adapter {
         compatible_surface: Some(&surface),
         force_fallback_adapter: false
     })).unwrap();
-    let adapters = instance.enumerate_adapters(wgpu::Backends::VULKAN)
+    let adapters = instance.enumerate_adapters(wgpu::Backends::all())
         .filter(|adapter| {
             let info = adapter.get_info();
             let supported = adapter.is_surface_supported(surface);
@@ -83,6 +86,7 @@ pub fn new_window(event_loop: &EventLoop<()>) -> Window {
             height: 100
         })
         .with_visible(false)
+        .with_resizable(false)
         .build(event_loop).unwrap();
     w.focus_window();
     w
