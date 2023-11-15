@@ -1,7 +1,7 @@
 [workspace.package]
 edition = "2021"
-rust-version = "1.72"
-keywords = ["rust","3d","game","wgpu","mmo","rpg"]
+rust-version = "1.75.0"
+keywords = ["rust","3d","game","wgpu"]
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/mberehulka/nexodia"
 repository = "https://github.com/mberehulka/nexodia"
@@ -12,6 +12,7 @@ authors = ["Muriel Guedes Pucci Berehulka"]
 resolver = "2"
 members = [
     "engine",
+    "shader",
     "compiler",
     "nexodia",
     "math",
@@ -21,7 +22,7 @@ members = [
 
 [workspace.dependencies]
 winit = "0.28.6"
-wgpu = { version = "0.17.0", default-features = false, features = [] }
+wgpu = { version = "0.17.0", default-features = false, features = ["wgsl"] }
 bytemuck = { version = "1.13.1", features = ["derive"] }
 zstd = "0.12.4"
 num_cpus = "1.16.0"

@@ -6,7 +6,8 @@ pub fn default_pipeline(
     e: &'static Engine,
     shader_module_desc: ShaderModuleDescriptor,
     buffers: &[VertexBufferLayout],
-    bind_group_layouts: &[&BindGroupLayout]
+    bind_group_layouts: &[&BindGroupLayout],
+    fragment_stage: bool
 ) -> RenderPipeline {
     let shader = e.device.create_shader_module(shader_module_desc);
     let render_pipeline_layout = e.device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -14,6 +15,11 @@ pub fn default_pipeline(
         bind_group_layouts,
         push_constant_ranges: &[]
     });
+    let targets = &[Some(wgpu::ColorTargetState {
+        format: e.surface_config.lock().unwrap().format,
+        blend: None,
+        write_mask: wgpu::ColorWrites::COLOR
+    })];
     e.device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: None,
         layout: Some(&render_pipeline_layout),
@@ -22,15 +28,15 @@ pub fn default_pipeline(
             entry_point: "vs_main",
             buffers
         },
-        fragment: Some(wgpu::FragmentState {
-            module: &shader,
-            entry_point: "fs_main",
-            targets: &[Some(wgpu::ColorTargetState {
-                format: e.surface_config.lock().unwrap().format,
-                blend: None,
-                write_mask: wgpu::ColorWrites::COLOR
-            })]
-        }),
+        fragment: if fragment_stage {
+            Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: "fs_main",
+                targets
+            })
+        } else {
+            None
+        },
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleList,
             strip_index_format: None,
@@ -55,35 +61,16 @@ pub fn default_pipeline(
         multiview: None
     })
 }
-    
-#[macro_export]
-macro_rules! shaders {
-    ($($name: ident),*) => {
-        use engine::Shader;
-        $( pub mod $name; )*
-        pub struct Shaders {
-            $( pub $name: $name::Shader ),*
-        }
-        impl Shaders {
-            pub fn new(e: &'static engine::Engine) -> Self {
-                let start = std::time::Instant::now();
-                let s = Self {
-                    $( $name: $name::Shader::new(e) ),*
-                };
-                info!("Shaders compiled in: {}ms", (std::time::Instant::now() - start).as_millis());
-                s
-            }
-        }
-    };
-}
-pub use shaders;
 
 #[macro_export]
 macro_rules! shader {
     (
-        $material: ty, $vertex: ty, $instance: ty,
-        [$($vbs: expr),*],
-        [$($bgls: expr),*]
+        @material $material: ty,
+        @vertex $vertex: ty,
+        @instance $instance: ty,
+        @vbls [$($vbls: expr),*],
+        @bgls [$($bgls: expr),*],
+        @frag_stage $frag_stage: expr
     ) => {
         pub struct Shader(wgpu::RenderPipeline);
         impl engine::Shader for Shader {
@@ -92,7 +79,7 @@ macro_rules! shader {
             type Instance = $instance;
             fn pipeline(&self) -> &wgpu::RenderPipeline { &self.0 }
             fn new(e: &'static engine::Engine) -> Self {
-                Self(engine::utils::shaders::default_pipeline(
+                Self(engine::utils::shader::default_pipeline(
                     e,
                     wgpu::ShaderModuleDescriptor {
                         label: None,
@@ -103,12 +90,13 @@ macro_rules! shader {
                     },
                     &[
                         Self::Vertex::LAYOUT,
-                        $($vbs),*
+                        $($vbls),*
                     ],
                     &[
                         &e.camera_buffer.bgl,
                         $(&$bgls(&e.device)),*
-                    ]
+                    ],
+                    $frag_stage
                 ))
             }
         }

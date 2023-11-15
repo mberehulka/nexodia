@@ -1,9 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 use winit::event::VirtualKeyCode;
-use engine::{Engine, Script, Quaternion, Light, Transform, ObjectRenderer};
 #[macro_use]
 extern crate engine;
+use engine::{Engine, Script, Quaternion, Light, Transform, ObjectRenderer};
 
+#[macro_use]
+mod utils;
 mod shaders;  use shaders::*;
 mod objects;  use objects::*;
 

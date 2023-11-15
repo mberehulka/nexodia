@@ -87,11 +87,11 @@ impl engine::Material for Material {
 }
 
 shader!(
-    Material, engine::vertex::pu::Vertex,
-    (),
-    [],
-    [
-        bgl
-    ]
+    @material    Material,
+    @vertex      engine::vertex::pu::Vertex,
+    @instance    (),
+    @vbls        [],
+    @bgls        [bgl],
+    @frag_stage  true
 );
 impl engine::ObjectRenderer for Shader {}

@@ -1,9 +1,6 @@
-join_structs!(
-    Shaders
-    [
-        basic,
-        character
-    ]
-    {Shaders}
-    new(e: &'static engine::Engine)
+join_modules!(
+    Shaders {
+        basic: Shaders
+        character: Shaders
+    }
 );

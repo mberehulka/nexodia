@@ -18,5 +18,7 @@ cargo run --bin nexodia
 ### 📑 Todo
 - [x] Instances
 - [x] Textures
-- [x] Animations (sort of :P)
-- [ ] Shadows
+- [x] Animations
+- [x] Shadows
+- [ ] Cascaded shadows
+- [ ] Global illumination
