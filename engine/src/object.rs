@@ -17,7 +17,7 @@ pub trait ObjectRenderer: Shader {
     fn render_object<'r, 's: 'r>(&'s self, render_pass: &mut wgpu::RenderPass<'r>, object: &'s Object<Self>) where Self: Sized {
         render_pass.set_pipeline(self.pipeline());
         render_pass.set_vertex_buffer(0, object.mesh.vertices_buffer.slice(..));
-        object.material.set(render_pass, 1);
+        object.material.set(render_pass);
         render_pass.draw(0..object.mesh.vertices_len, 0..1);
     }
 }

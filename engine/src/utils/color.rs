@@ -1,45 +1,27 @@
 pub struct Color([f32;4]);
+pub trait ToColor {
+    fn to_color(self) -> Color;
+}
 
+// Type -> Color
 impl From<[f32;4]> for Color {
     fn from(value: [f32;4]) -> Self {
         Self(value)
     }
 }
-impl From<Color> for [f32;4] {
-    fn from(value: Color) -> Self {
-        value.0
-    }
+impl ToColor for [f32;4] {
+    fn to_color(self) -> Color { self.into() }
 }
+
 impl From<[f32;3]> for Color {
     fn from(v: [f32;3]) -> Self {
         Self([v[0], v[1], v[2], 1.])
     }
 }
-impl From<Color> for [f32;3] {
-    fn from(v: Color) -> Self {
-        [v.0[0], v.0[1], v.0[2]]
-    }
+impl ToColor for [f32;3] {
+    fn to_color(self) -> Color { self.into() }
 }
 
-#[inline(always)]
-const fn byte_to_hex(b: u8) -> u8 {
-    if b >= b'0' && b <= b'9' {
-        b - b'0'
-    } else if b >= b'a' && b <= b'f' {
-        b - b'a' + 10
-    } else if b >= b'A' && b <= b'F' {
-        b - b'A' + 10
-    } else {
-        panic!("Bad format")
-    }
-}
-
-#[inline(always)]
-pub fn hex_to_f32(a: u8, b: u8) -> f32 {
-    ((byte_to_hex(a) << 4) + byte_to_hex(b)) as f32 / 255.
-}
-
-/// From 'RGB', '#RGB', 'ARGB', '#ARGB', 'RRGGBB', '#RRGGBB', 'AARRGGBB', '#AARRGGBB'
 impl From<&str> for Color {
     fn from(v: &str) -> Self {
         let v = v.strip_prefix("#").unwrap_or(v);
@@ -73,6 +55,10 @@ impl From<&str> for Color {
         }
     }
 }
+impl ToColor for &str {
+    fn to_color(self) -> Color { self.into() }
+}
+
 impl From<usize> for Color {
     fn from(v: usize) -> Self {
         Self([
@@ -83,6 +69,10 @@ impl From<usize> for Color {
         ])
     }
 }
+impl ToColor for usize {
+    fn to_color(self) -> Color { self.into() }
+}
+
 impl From<(u8, u8, u8)> for Color {
     fn from(v: (u8, u8, u8)) -> Self {
         Self([
@@ -92,4 +82,39 @@ impl From<(u8, u8, u8)> for Color {
             1.
         ])
     }
+}
+impl ToColor for (u8, u8, u8) {
+    fn to_color(self) -> Color { self.into() }
+}
+
+
+// Color -> Type
+impl From<Color> for [f32;4] {
+    fn from(value: Color) -> Self {
+        value.0
+    }
+}
+impl From<Color> for [f32;3] {
+    fn from(v: Color) -> Self {
+        [v.0[0], v.0[1], v.0[2]]
+    }
+}
+
+
+#[inline(always)]
+const fn byte_to_hex(b: u8) -> u8 {
+    if b >= b'0' && b <= b'9' {
+        b - b'0'
+    } else if b >= b'a' && b <= b'f' {
+        b - b'a' + 10
+    } else if b >= b'A' && b <= b'F' {
+        b - b'A' + 10
+    } else {
+        panic!("Bad format")
+    }
+}
+
+#[inline(always)]
+pub fn hex_to_f32(a: u8, b: u8) -> f32 {
+    ((byte_to_hex(a) << 4) + byte_to_hex(b)) as f32 / 255.
 }

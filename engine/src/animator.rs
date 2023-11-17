@@ -19,17 +19,17 @@ impl Default for AnimatorBindingFrame {
     }
 }
 
-pub struct Animator<'s> {
+pub struct Animator {
     pub skeleton: Arc<Skeleton>,
     pub transform: SimpleTransform,
     pub buffer: Arc<Buffer>,
     pub speed: f32,
     pub frame: AnimationFrame,
-    pub animation: &'s Animation,
+    pub animation: Animation,
     pub time: f32
 }
-impl<'s> Animator<'s> {
-    pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>, animation: &'s Animation) -> Self {
+impl Animator {
+    pub fn new<V: Vertex>(e: &Engine, mesh: &Mesh<V>, animation: Animation) -> Self {
         Self {
             skeleton: mesh.skeleton.as_ref().unwrap().clone(),
             transform: Default::default(),
@@ -67,7 +67,7 @@ impl<'s> Animator<'s> {
     fn reset_animation(&mut self) {
         self.time = 0.
     }
-    pub fn set_animation(&mut self, animation: &'s Animation) {
+    pub fn set_animation(&mut self, animation: Animation) {
         if animation.id != self.animation.id {
             self.reset_animation();
             self.animation = animation
@@ -102,8 +102,8 @@ impl<'s> Animator<'s> {
     }
 }
 
-impl<'s> Engine {
-    pub fn animator<V: Vertex>(&self, mesh: &Mesh<V>, animation: &'s Animation) -> Animator<'s> {
+impl Engine {
+    pub fn animator<V: Vertex>(&self, mesh: &Mesh<V>, animation: Animation) -> Animator {
         Animator::new(self, mesh, animation)
     }
 }

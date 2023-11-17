@@ -86,7 +86,7 @@ pub trait InstancesRenderer: Shader {
         render_pass.set_pipeline(self.pipeline());
         render_pass.set_vertex_buffer(0, instances.mesh.vertices_buffer.slice(..));
         render_pass.set_vertex_buffer(1, instances.instances_buffer.slice(..));
-        instances.material.set(render_pass, 0);
+        instances.material.set(render_pass);
         render_pass.draw(0..instances.mesh.vertices_len, 0..instances.instances_buffer_length);
     }
 }

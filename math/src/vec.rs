@@ -1,4 +1,7 @@
-use std::ops::{Sub, Add, Mul, Div, Neg, MulAssign, AddAssign, SubAssign, DivAssign};
+use std::{
+    ops::{Sub, Add, Mul, Div, Neg, MulAssign, AddAssign, SubAssign, DivAssign},
+    sync::atomic::{AtomicU32, Ordering}, mem::transmute
+};
 use bincode::{Decode, Encode};
 
 macro_rules! vec {
@@ -196,6 +199,53 @@ macro_rules! vec {
                         $( *unsafe { v.get_unchecked([<$name Indexes>]::$field as usize) } ),*
                     )
                 }
+            }
+
+            #[derive(Default)]
+            pub struct [<M $name>] {
+                $($field: AtomicU32),*
+            }
+            impl [<M $name>] {
+                pub const fn new($($field: f32),*) -> Self {
+                    Self {
+                        $($field: unsafe { transmute($field) }),*
+                    }
+                }
+                #[inline(always)]
+                pub fn set(&self, v: f32) {
+                    let v = unsafe { transmute(v) };
+                    $(self.$field.store(v, Ordering::Relaxed));*
+                }
+                #[inline(always)]
+                pub fn get(&self) -> $name {
+                    $name::new($(self.$field()),*)
+                }
+                #[inline(always)]
+                pub fn add(&self, v: f32) {
+                    $(self.[<add_ $field>](v));*
+                }
+                #[inline(always)]
+                pub fn sub(&self, v: f32) {
+                    $(self.[<sub_ $field>](v));*
+                }
+                $(
+                    #[inline(always)]
+                    pub fn $field(&self) -> f32 {
+                        unsafe { transmute(self.$field.load(Ordering::Relaxed)) }
+                    }
+                    #[inline(always)]
+                    pub fn [<set_ $field>](&self, v: f32) {
+                        self.$field.store(unsafe { transmute(v) }, Ordering::Relaxed)
+                    }
+                    #[inline(always)]
+                    pub fn [<add_ $field>](&self, v: f32) {
+                        self.[<set_ $field>](self.[<$field>]() + v)
+                    }
+                    #[inline(always)]
+                    pub fn [<sub_ $field>](&self, v: f32) {
+                        self.[<set_ $field>](self.[<$field>]() - v)
+                    }
+                )*
             }
         }
     };

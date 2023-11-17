@@ -1,126 +1,147 @@
-use std::{sync::{Mutex, Arc, mpsc::{channel, Receiver}}, thread::Thread, collections::HashMap};
-use winit::{event::{Event, WindowEvent, KeyboardInput, ElementState, VirtualKeyCode}, dpi::PhysicalSize};
+use std::{sync::{Mutex, Arc}, collections::HashMap, borrow::BorrowMut, thread::JoinHandle};
+use crossbeam_channel::{Sender, TrySendError};
 
-use crate::utils::id::{Id, IdT};
+use crate::{utils::{IdHandler, Id}, Engine};
 
-#[allow(unused_variables)]
-pub trait Script: Send {
-    fn name() -> &'static str { "Unknow" }
-    fn event(&mut self, event: Event<'static, ()>) {}
-    fn update(&mut self) {}
-    fn render(&mut self) {}
-    fn on_key_press(&mut self, key: VirtualKeyCode) {}
-    fn on_key_up(&mut self, key: VirtualKeyCode) {}
-    fn window_resized(&mut self, new_size: PhysicalSize<u32>) {}
-    fn dropped(&mut self){}
+lazy_static::lazy_static! {
+    static ref THREADS: Mutex<HashMap<Id, ScriptThread>> = Default::default();
 }
+static ID: IdHandler = IdHandler::default();
 
-#[derive(Debug)]
-pub enum ThreadEvent {
-    Event(Event<'static, ()>),
-    Ready,
+#[derive(Debug, Clone, Copy)]
+pub enum ScriptEvent {
+    WindowResized,
+    WindowFocus,
+    WindowBlur,
+    Update,
+    Render,
+    Nothing,
     Close
 }
 
-#[derive(Clone)]
-pub struct ScriptHandler {
-    id: IdT,
-    scripts: &'static Scripts,
-    thread: Thread,
-    events: Arc<Mutex<Vec<ThreadEvent>>>,
-    rx: Arc<Mutex<Receiver<()>>>
-}
-impl ScriptHandler {
-    pub fn new<S: Script + 'static>(scripts: &'static Scripts, mut script: S, id: IdT) -> Self {
-        let events = Arc::new(Mutex::new(Vec::<ThreadEvent>::new()));
-        let (tx, rx) = channel();
-        Self {
-            id,
-            scripts,
-            events: events.clone(),
-            thread: std::thread::spawn(move || {
-                loop {
-                    let mut events = events.lock().unwrap();
-                    let recv = if events.len() > 0 { Some(events.remove(0)) } else { None };
-                    drop(events);
-                    if let Some(event) = recv {
-                        match event {
-                            ThreadEvent::Event(event) => match event {
-                                Event::WindowEvent { event: WindowEvent::KeyboardInput { input: KeyboardInput {
-                                    state: ElementState::Pressed, virtual_keycode: Some(key), ..
-                                }, .. }, .. } =>
-                                    script.on_key_press(key),
-                                Event::WindowEvent { event: WindowEvent::KeyboardInput { input: KeyboardInput {
-                                    state: ElementState::Released, virtual_keycode: Some(key), ..
-                                }, .. }, .. } =>
-                                    script.on_key_up(key),
-                                Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } =>
-                                    script.window_resized(new_size),
-                                Event::MainEventsCleared => script.update(),
-                                Event::RedrawRequested(_) => script.render(),
-                                _ => script.event(event)
-                            },
-                            ThreadEvent::Ready => tx.send(()).unwrap(),
-                            ThreadEvent::Close => break
-                        }
-                    } else {
-                        std::thread::park()
-                    }
-                }
-                script.dropped();
-                info!("Script: {}, thread: {id}, dropped", S::name())
-            }).thread().clone().into(),
-            rx: Arc::new(Mutex::new(rx))
-        }
-    }
-    pub fn send(&self, e: ThreadEvent) {
-        self.events.lock().unwrap().push(e);
-        self.thread.unpark()
-    }
-    pub fn wait(&self) {
-        self.send(ThreadEvent::Ready);
-        self.rx.lock().unwrap().recv().ok();
-    }
-    /// Make this script static to prevent it from dropping and closing it's thread.
-    pub fn make_static(self) -> &'static Self {
-        Box::leak(Box::new(self))
-    }
+#[allow(unused_variables)]
+pub trait Script<'s>: Send + Sized + 'static {
+    type Params: Send;
+    type Return: Send;
+    const NAME: &'static str;
+    fn new(e: &'static Engine, id: Id, params: Self::Params) -> (Self, Self::Return);
+    fn window_focus(&mut self) {}
+    fn window_blur(&mut self) {}
+    fn update(&mut self) {}
+    fn render(&mut self) {}
+    fn window_resized(&mut self) {}
+    fn dropped(self) {}
 }
 
-impl Drop for ScriptHandler {
+/// Close script's thread when dropped
+pub struct ScriptInstance<T>(pub T, pub Id);
+impl<T> Drop for ScriptInstance<T> {
     fn drop(&mut self) {
-        self.scripts.remove(self)
-    }
-}
-
-static ID: Id = Id::default();
-
-#[derive(Default)]
-pub struct Scripts {
-    pub(crate) threads: Mutex<HashMap<IdT, ScriptHandler>>
-}
-impl Scripts {
-    pub fn add<S: Script + 'static>(&'static self, script: S) -> ScriptHandler {
-        let id = ID.next();
-        let handler = ScriptHandler::new(&self, script, id);
-        self.threads.lock().unwrap().insert(id, handler.clone());
-        handler
-    }
-    /// Do not call this directly, threads are automatically destroyed when instance is dropped, call drop() instead.
-    /// 
-    /// ```
-    /// pub struct TestScript {}
-    /// impl Script for TestScript {}
-    /// ...
-    /// let test = engine.scripts.add(TestScript {});
-    /// drop(test);
-    /// ```
-    pub fn remove(&self, st: &ScriptHandler) {
-        let mut threads = self.threads.lock().unwrap();
-        let thread = threads.remove(&st.id);
+        let mut threads = THREADS.lock().unwrap();
+        let thread = threads.remove(&self.1);
         drop(threads);
         if let Some(thread) = thread {
-            thread.send(crate::ThreadEvent::Close)
+            loop {
+                match thread.tx.try_send(ScriptEvent::Close) {
+                    Ok(_) => break,
+                    Err(e) => match e {
+                        TrySendError::Disconnected(_) => break,
+                        TrySendError::Full(_) => continue
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub(crate) struct ScriptThread {
+    tx: Sender<ScriptEvent>,
+    jh: JoinHandle<()>
+}
+
+impl Engine {
+    pub fn new_script<'s, S: Script<'s>>(&'static self, params: S::Params) -> ScriptInstance<S::Return> {
+        let id = ID.next();
+        let (tx, rx) = crossbeam_channel::bounded(0);
+        let (script, r) = S::new(self, id, params);
+        let script = Arc::new(Mutex::new(Some(script)));
+        let jh = std::thread::spawn(move || {
+            let mut script = script.lock().unwrap().borrow_mut().take().unwrap();
+            loop {
+                match rx.recv().unwrap() {
+                    ScriptEvent::WindowFocus => script.window_focus(),
+                    ScriptEvent::WindowBlur => script.window_blur(),
+                    ScriptEvent::Update => script.update(),
+                    ScriptEvent::Render => script.render(),
+                    ScriptEvent::WindowResized => script.window_resized(),
+                    ScriptEvent::Nothing => {}
+                    ScriptEvent::Close => {
+                        script.dropped();
+                        break
+                    }
+                }
+            }
+            info!("Script {}, thread {}, dropped", S::NAME, id);
+        });
+        THREADS.lock().unwrap().insert(id, ScriptThread { tx, jh });
+        ScriptInstance(r, id)
+    }
+    pub(crate) fn emit_event(&self, event: ScriptEvent) {
+        let threads = THREADS.lock().unwrap();
+        let mut threads = threads.values().collect::<Vec<_>>();
+        while threads.len() > 0 {
+            threads.retain(|thread| {
+                match thread.tx.try_send(event) {
+                    Ok(_) => false,
+                    Err(e) => match e {
+                        TrySendError::Disconnected(_) => unreachable!(),
+                        TrySendError::Full(_) => true
+                    }
+                }
+            })
+        }
+    }
+    pub(crate) fn emit_events(&self, events: Vec<ScriptEvent>) {
+        let threads = THREADS.lock().unwrap();
+        let mut threads = threads.values()
+            .into_iter()
+            .map(|thread|(thread, events.clone()))
+            .collect::<Vec<_>>();
+        while threads.len() > 0 {
+            let mut script_id = 0;
+            while script_id < threads.len() {
+                if let Some(event) = threads[script_id].1.last() {
+                    match threads[script_id].0.tx.try_send(*event) {
+                        Ok(_) => {
+                            threads[script_id].1.pop();
+                        },
+                        Err(e) => match e {
+                            TrySendError::Disconnected(_) => unreachable!(),
+                            TrySendError::Full(_) => {}
+                        }
+                    }
+                } else {
+                    threads.remove(script_id);
+                }
+                script_id += 1
+            }
+        }
+    }
+}
+
+impl Engine {
+    pub fn close_thread_sync<T>(&self, script: ScriptInstance<T>) {
+        let st = THREADS.lock().unwrap().remove(&script.1).unwrap();
+        st.tx.send(ScriptEvent::Close).unwrap();
+        st.jh.join().unwrap()
+    }
+    pub(crate) fn close_threads(&self) {
+        self.emit_event(ScriptEvent::Close);
+        let mut threads = THREADS.lock().unwrap();
+        let ts = threads.drain().collect::<Vec<_>>();
+        drop(threads);
+        for (_id, st) in ts.into_iter() {
+            st.jh.join().unwrap()
         }
     }
 }

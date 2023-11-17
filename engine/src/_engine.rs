@@ -1,11 +1,15 @@
 use std::sync::{Mutex, atomic::AtomicBool};
+use math::MVec2;
 use wgpu::{Instance, Surface, Adapter, Device, Queue, SurfaceConfiguration, TextureUsages, CommandEncoder};
 use winit::{
     event::{Event, WindowEvent, ElementState, KeyboardInput},
     event_loop::{ControlFlow, EventLoop}, window::Window, dpi::PhysicalSize
 };
 
-use crate::{CameraBuffer, Logger, Time, utils::{initialization::*, pressed_keys::PressedKeys}, Scripts, DepthTexture, OutputTexture};
+use crate::{
+    utils::{initialization::*, pressed_keys::PressedKeys},
+    CameraBuffer, Logger, Time, DepthTexture, OutputTexture, Script, ScriptEvent, ScriptInstance
+};
 
 pub struct Engine {
     pub window: Window,
@@ -19,9 +23,10 @@ pub struct Engine {
     pub pressed_keys: PressedKeys,
     pub camera_buffer: CameraBuffer,
     pub time: Time,
-    pub scripts: Scripts,
     pub depth_texture: Mutex<DepthTexture>,
-    pub output_texture: Mutex<OutputTexture>
+    pub output_texture: Mutex<OutputTexture>,
+    pub cursor_movement: MVec2,
+    current_scene: Mutex<Option<ScriptInstance<()>>>
 }
 impl Engine {
     pub fn new() -> (EventLoop<()>, &'static Self) {
@@ -48,18 +53,22 @@ impl Engine {
             pressed_keys: Default::default(),
             camera_buffer,
             time: Time::new(),
-            scripts: Default::default(),
             depth_texture,
-            output_texture
+            output_texture,
+            cursor_movement: Default::default(),
+            current_scene: Default::default()
         };
         (event_loop, Box::leak(Box::new(s)))
     }
     pub fn start(&'static self, event_loop: EventLoop<()>) -> ! {
         self.window.set_visible(true);
+        let mut window_resized = None;
+        let mut window_focus = None;
         event_loop.run(move |event, _, control_flow| {
-            if self.exit.load(std::sync::atomic::Ordering::Relaxed) { return *control_flow = ControlFlow::Exit }
-            let event = if let Some(v) = event.to_static() { v } else { return };
-            let threads = self.scripts.threads.lock().unwrap();
+            if self.exit.load(std::sync::atomic::Ordering::Relaxed) {
+                self.close_threads();
+                return *control_flow = ControlFlow::Exit
+            }
             match event {
                 Event::WindowEvent { event: WindowEvent::KeyboardInput { input: KeyboardInput {
                     state: ElementState::Pressed, virtual_keycode: Some(code), ..
@@ -70,16 +79,42 @@ impl Engine {
                 }, .. }, .. } =>
                     self.pressed_keys.set(code, false),
                 Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => self.exit(),
-                Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } => self.resize(new_size),
+                Event::WindowEvent { event: WindowEvent::Resized(new_size), .. } => window_resized = Some(new_size),
+                Event::WindowEvent { event: WindowEvent::CursorMoved { position, .. }, .. } => {
+                    let ws = self.window_size();
+                    self.cursor_movement.add_x(position.x as f32 - (ws.x / 2.));
+                    self.cursor_movement.add_y(position.y as f32 - (ws.y / 2.));
+                },
+                Event::WindowEvent { event: WindowEvent::Focused(focus), .. } => window_focus = Some(focus),
                 Event::MainEventsCleared => {
                     self.time.update();
-                    self.window.request_redraw()
+
+                    if let Some(new_size) = window_resized.take() {
+                        self.emit_event(ScriptEvent::Nothing);
+                        self.resize(new_size);
+                        self.emit_events(vec![
+                            ScriptEvent::WindowResized,
+                            ScriptEvent::Nothing
+                        ]);
+                    }
+
+                    let mut update_events = vec![ ScriptEvent::Update ];
+                    if let Some(focus) = window_focus {
+                        if focus { update_events.push(ScriptEvent::WindowFocus) }
+                        else { update_events.push(ScriptEvent::WindowBlur) }
+                    }
+                    self.emit_events(update_events);
+                    
+                    self.emit_events(vec![
+                        ScriptEvent::Render,
+                        ScriptEvent::Nothing
+                    ]);
+
+                    self.window.request_redraw();
+                    self.cursor_movement.set(0.);
                 },
-                Event::RedrawRequested(_) => for thread in threads.values() { thread.wait() }
+                Event::RedrawRequested(_) => {}
                 _ => {}
-            }
-            for thread in threads.values() {
-                thread.send(crate::ThreadEvent::Event(event.clone()))
             }
         })
     }
@@ -138,5 +173,14 @@ impl Engine {
         let mut encoder = self.encoder();
         f(&mut encoder);
         self.present_output_texture(encoder);
+    }
+    pub fn set_scene<S: Script<'static, Return = ()> + 'static>(&'static self, params: S::Params) {
+        std::thread::spawn(move || {
+            if let Some(thread) = self.current_scene.lock().unwrap().take() {
+                self.close_thread_sync(thread)
+            }
+            let script = self.new_script::<S>(params);
+            *self.current_scene.lock().unwrap() = Some(script);
+        });
     }
 }

@@ -1,3 +1,4 @@
+#[macro_export]
 macro_rules! join_modules {
     (
         $struct_name: ident {

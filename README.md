@@ -22,3 +22,4 @@ cargo run --bin nexodia
 - [x] Shadows
 - [ ] Cascaded shadows
 - [ ] Global illumination
+- [ ] Gather all events between frames and join, send only one to script per frame

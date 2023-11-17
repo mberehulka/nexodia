@@ -1,2 +1,1 @@
 - Animations with quaternion rotation instead of using matrix.
-- Store script events in a struct with current and next event, for more efficient shift and push.

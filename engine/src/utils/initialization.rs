@@ -86,7 +86,6 @@ pub fn new_window(event_loop: &EventLoop<()>) -> Window {
             height: 100
         })
         .with_visible(false)
-        .with_resizable(false)
         .build(event_loop).unwrap();
     w.focus_window();
     w

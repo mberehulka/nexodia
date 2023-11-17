@@ -12,7 +12,7 @@ authors = ["Muriel Guedes Pucci Berehulka"]
 resolver = "2"
 members = [
     "engine",
-    "shader",
+    "macros",
     "compiler",
     "nexodia",
     "math",
@@ -40,10 +40,13 @@ cgmath = "0.18.0"
 paste = "1.0.14"
 size = "0.4.1"
 bincode = "2.0.0-rc.3"
+syn = { version = "2.0.39", features = ["full"]}
+quote = "1.0.33"
+proc-macro2 = "1.0.69"
+crossbeam-channel = "0.5.8"
+lazy_static = "1.4.0"
 
 [profile.release]
 opt-level = 3
 codegen-units = 1
 lto = true
-panic = "abort"
-strip = true

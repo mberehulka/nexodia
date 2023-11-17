@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate log;
-pub use log::*;
 
 pub use math::*;
 

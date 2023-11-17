@@ -18,11 +18,15 @@ pub struct Reader {
 }
 impl Reader {
     pub fn new(path: impl AsRef<Path>) -> Self {
+        let path = path.as_ref();
         Self {
             bytes: zstd::decode_all(
-                std::fs::OpenOptions::new()
+                match std::fs::OpenOptions::new()
                     .read(true)
-                    .open(path.as_ref()).unwrap()
+                    .open(path) {
+                    Ok(v) => v,
+                    Err(e) => panic!("Error: {e} while reading: {path:?}")
+                }
             ).unwrap(),
             cursor: 0
         }

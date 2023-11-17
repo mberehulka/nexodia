@@ -1,6 +1,5 @@
 use std::{path::Path, marker::PhantomData, sync::Arc};
 use compiler::Skeleton;
-use math::Transform;
 use wgpu::util::DeviceExt;
 
 use crate::{Engine, Vertex, decode};
@@ -14,9 +13,7 @@ pub struct Mesh<V: Vertex> {
 }
 impl Engine {
     pub fn load_mesh<V: Vertex>(&self, path: impl AsRef<Path>) -> Mesh<V> {
-        self.initialize_mesh(decode(&path))
-    }
-    pub fn initialize_mesh<V: Vertex>(&self, mesh: compiler::Mesh) -> Mesh<V> {
+        let mesh: compiler::Mesh = decode(&path);
         let vertices_len = mesh.indices.len() as u32;
         let mut contents = Vec::with_capacity(mesh.indices.len() * bytemuck::bytes_of(&V::default()).len());
         for i in mesh.indices {
@@ -35,8 +32,5 @@ impl Engine {
             vertices_len,
             skeleton: if let Some(skeleton) = mesh.skeleton { Some(skeleton.into()) } else { None }
         }
-    }
-    pub fn transformed_mesh<V: Vertex>(&self, path: impl AsRef<Path>, transform: Transform) -> Mesh<V> {
-        self.initialize_mesh(decode::<compiler::Mesh>(&path).transform(transform))
     }
 }

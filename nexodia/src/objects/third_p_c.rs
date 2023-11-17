@@ -1,7 +1,6 @@
 use std::{f32::consts::FRAC_PI_2, sync::{Mutex, Arc}};
 use utils::Lerp;
-use winit::event::{WindowEvent, Event};
-use engine::{Script, Engine, CameraBinding, Vec3, Mat4x4, Vec2, Quaternion, ScriptHandler};
+use engine::{Script, Engine, CameraBinding, Vec3, Mat4x4, Vec2, Quaternion, utils::Id};
 
 const CAM_MAX_ANG: f32 = FRAC_PI_2 - 0.1;
 
@@ -14,13 +13,15 @@ pub struct CameraValues {
 pub struct ThirdPersonCamera {
     e: &'static Engine,
     pub values: CameraValues,
-    cursor_movement: Vec2,
     mouse_sensitivity: Vec2,
     rotation: Lerp<Vec2>,
     distance: Lerp<f32>
 }
-impl ThirdPersonCamera {
-    pub fn new(e: &'static Engine) -> (ScriptHandler, CameraValues) {
+impl<'s> Script<'s> for ThirdPersonCamera {
+    type Params = ();
+    type Return = CameraValues;
+    const NAME: &'static str = "ThirdPersonCamera";
+    fn new(e: &'static Engine, _id: Id, _params: Self::Params) -> (Self, Self::Return) {
         e.center_window();
         e.center_cursor();
         e.window.set_cursor_grab(winit::window::CursorGrabMode::Confined).ok();
@@ -28,38 +29,26 @@ impl ThirdPersonCamera {
         e.window.set_cursor_visible(false);
         e.window.focus_window();
         let values = CameraValues::default();
-        let sh = e.scripts.add(Self {
-            e,
-            values: values.clone(),
-            cursor_movement: Default::default(),
-            mouse_sensitivity: Vec2::new(0.003, 0.003),
-            rotation: Lerp::new(Vec2::new(0., 0.), 10.),
-            distance: Lerp::new(2., 0.1)
-        });
-        (sh, values)
-    }
-}
-impl Script for ThirdPersonCamera {
-    fn name() -> &'static str { "ThirdPersonCamera" }
-    fn event(&mut self, event: winit::event::Event<'static, ()>) {
-        match event {
-            Event::WindowEvent { event: WindowEvent::CursorMoved { position, .. }, .. } => {
-                let ws = self.e.window.inner_size();
-                self.cursor_movement = Vec2::new(
-                    position.x as f32 - ws.width as f32 / 2.,
-                    position.y as f32 - ws.height as f32 / 2.
-                ) * self.mouse_sensitivity
-            }
-            _ => {}
-        }
+        (
+            Self {
+                e,
+                values: values.clone(),
+                mouse_sensitivity: Vec2::new(0.003, 0.003),
+                rotation: Lerp::new(Vec2::new(0., 0.), 10.),
+                distance: Lerp::new(2., 0.1)
+            },
+            values
+        )
     }
     fn update(&mut self) {
         self.e.center_cursor();
 
+        let cursor_movement = self.e.cursor_movement.get() * self.mouse_sensitivity;
+        
         let s = self.e.time.delta();
 
-        self.rotation.target.y -= self.cursor_movement.x;
-        self.rotation.target.x -= self.cursor_movement.y;
+        self.rotation.target.y -= cursor_movement.x;
+        self.rotation.target.x -= cursor_movement.y;
         self.rotation.target.x = self.rotation.target.x.min(CAM_MAX_ANG).max(-CAM_MAX_ANG);
         self.rotation.lerp(s);
         *self.values.direction.lock().unwrap() = self.rotation.y;
@@ -77,7 +66,6 @@ impl Script for ThirdPersonCamera {
         self.e.update_camera_buffer(CameraBinding {
             matrix: (proj * view).into(),
             position: position.extend(1.).into()
-        });
-        self.cursor_movement = Vec2::new(0., 0.)
+        })
     }
 }

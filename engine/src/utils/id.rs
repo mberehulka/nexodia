@@ -1,20 +1,20 @@
 use std::sync::Mutex;
 
-pub type IdT = u128;
+pub type Id = u128;
 
-pub struct Id {
-    id: Mutex<IdT>
+pub struct IdHandler {
+    id: Mutex<Id>
 }
-impl Id {
+impl IdHandler {
     pub const fn default() -> Self {
         Self {
             id: Mutex::new(0)
         }
     }
-    pub fn next(&self) -> IdT {
+    pub fn next(&self) -> Id {
         let mut id = self.id.lock().unwrap();
         *id += 1;
-        assert!(*id < IdT::MAX);
+        assert!(*id < Id::MAX);
         *id
     }
 }

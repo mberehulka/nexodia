@@ -9,8 +9,7 @@
                 "reveal": "always",
                 "clear": true,
                 "panel": "shared"
-            },
-            "group": "build"
+            }
         },
         {
             "label": "B",
@@ -21,8 +20,7 @@
                 "clear": true,
                 "panel": "shared",
                 "close": true
-            },
-            "group": "build"
+            }
         },
         {
             "label": "Convert VRM to FBX",
@@ -32,8 +30,7 @@
                 "reveal": "always",
                 "clear": true,
                 "panel": "shared"
-            },
-            "group": "build"
+            }
         }
     ]
 }

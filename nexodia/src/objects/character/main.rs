@@ -1,58 +1,50 @@
 use std::{f32::consts::PI, sync::Arc};
-use engine::{Script, Engine, utils::Color, Animator, Light, Quaternion, Vec3, Mesh};
+use engine::{Script, Engine, utils::Id, Animator, Light, Quaternion, Vec3, Mesh};
 
-use crate::{CameraValues, shaders::character};
+use crate::{objects::CameraValues, shaders::character, objects::Character, scenes::main::Assets};
 
-use super::Character;
-
-type Vertex = <character::main::Shader as engine::Shader>::Vertex;
-
-load_animations!(
-    CharacterAnimations,
-    { "male/animations", idle, true }
-    { "male/animations", walk_forward, true }
-    { "male/animations", walk_back, true }
-    { "male/animations", walk_right, true }
-    { "male/animations", walk_left, true }
-);
-
-pub struct MainCharacter<'s> {
+pub struct MainCharacter {
     e: &'static Engine,
-    animations: Arc<CharacterAnimations>,
+    assets: Arc<Assets>,
     camera_values: CameraValues,
-    pub animator: Animator<'s>
+    pub animator: Animator
 }
-impl<'s> MainCharacter<'s> {
-    pub fn new(
+impl<'s> Script<'s> for MainCharacter {
+    type Params = (
+        Arc<Assets>,
+        Mesh<<character::main::Shader as engine::Shader>::Vertex>,
+        &'s Light,
+        CameraValues
+    );
+    type Return = Character;
+    const NAME: &'static str = "MainCharacter";
+    fn new(
         e: &'static Engine,
-        animations: Arc<CharacterAnimations>,
-        mesh: Mesh<Vertex>,
-        light: &Light,
-        camera_values: CameraValues
-    ) -> Character {
-        let animator = e.animator(&mesh, animations.idle);
+        _id: Id,
+        (assets, mesh, light, camera_values): Self::Params
+    ) -> (Self, Self::Return) {
+        let animator = e.animator(&mesh, assets.male_animations_idle.clone());
         let object = e.create_object(
-            character::main::Material::new(e, &animator, light, Color::from("#d69f7e").into()),
+            character::main::Material::new(e, &animator, light, "#d69f7e"),
             mesh.clone()
         );
         let object_light = e.create_object(
             character::dir_light::Material::new(e, &animator, light),
             mesh
         );
-        let script = e.scripts.add(MainCharacter {
-            e,
-            animations: animations.clone(),
-            camera_values,
-            animator
-        });
-        Character {
-            script,
-            main: object,
-            dir_light: object_light
-        }
+        (
+            Self {
+                e,
+                assets,
+                camera_values,
+                animator
+            },
+            Character {
+                main: object,
+                dir_light: object_light
+            }
+        )
     }
-}
-impl<'s> Script for MainCharacter<'s> {
     fn update(&mut self) {
         if self.e.pressed_keys["W"] | self.e.pressed_keys["S"] | self.e.pressed_keys["A"] | self.e.pressed_keys["D"] {
             let target_direction = Quaternion::from_angle_y(*self.camera_values.direction.lock().unwrap() + PI).normalised();
@@ -60,20 +52,20 @@ impl<'s> Script for MainCharacter<'s> {
             self.animator.transform.rotation = self.animator.transform.rotation.nlerp(target_direction, t * 2.).normalised();
             let s = t * 1.35;
             if self.e.pressed_keys["W"] {
-                self.animator.set_animation(self.animations.walk_forward);
+                self.animator.set_animation(self.assets.male_animations_walk_forward.clone());
                 self.animator.transform.translation += (self.animator.transform.rotation * Vec3::new( 0., 0.,  1.)).with_y(0.).normalized() * s
             } else if self.e.pressed_keys["S"] {
-                self.animator.set_animation(self.animations.walk_back);
+                self.animator.set_animation(self.assets.male_animations_walk_back.clone());
                 self.animator.transform.translation += (self.animator.transform.rotation * Vec3::new( 0., 0., -1.)).with_y(0.).normalized() * s
             } else if self.e.pressed_keys["A"] {
-                self.animator.set_animation(self.animations.walk_left);
+                self.animator.set_animation(self.assets.male_animations_walk_left.clone());
                 self.animator.transform.translation += (self.animator.transform.rotation * Vec3::new( 1., 0.,  0.)).with_y(0.).normalized() * s
             } else if self.e.pressed_keys["D"] {
-                self.animator.set_animation(self.animations.walk_right);
+                self.animator.set_animation(self.assets.male_animations_walk_right.clone());
                 self.animator.transform.translation += (self.animator.transform.rotation * Vec3::new(-1., 0.,  0.)).with_y(0.).normalized() * s
             }
         } else {
-            self.animator.set_animation(self.animations.idle)
+            self.animator.set_animation(self.assets.male_animations_idle.clone())
         }
         self.animator.update(self.e);
         *self.camera_values.target.lock().unwrap() = self.animator.position();
