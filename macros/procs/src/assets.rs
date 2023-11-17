@@ -7,6 +7,8 @@ use syn::{
     parse_macro_input, bracketed, Token, Expr
 };
 
+use crate::utils::assert_ident;
+
 #[derive(Debug)]
 pub struct Path(Vec<Ident>);
 impl Parse for Path {
@@ -88,15 +90,15 @@ impl Parse for Args {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         Ok(Self {
             animations: {
-                assert!(Ident::parse(input)?.to_string() == "animations");
+                assert_ident(input, "animations")?;
                 Paths::parse(input)?
             },
             meshes: {
-                assert!(Ident::parse(input)?.to_string() == "meshes");
+                assert_ident(input, "meshes")?;
                 PathsArg::parse(input)?
             },
             textures: {
-                assert!(Ident::parse(input)?.to_string() == "textures");
+                assert_ident(input, "textures")?;
                 Paths::parse(input)?
             }
         })
