@@ -1,8 +1,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+#![feature(trait_alias)]
 
 #[macro_use]
 extern  crate macros;
 
+mod utils;
 mod shaders;
 mod objects;
 mod scenes;

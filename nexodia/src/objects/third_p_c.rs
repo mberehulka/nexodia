@@ -1,6 +1,7 @@
 use std::{f32::consts::FRAC_PI_2, sync::{Mutex, Arc}};
-use utils::Lerp;
 use engine::{Script, Engine, CameraBinding, Vec3, Mat4x4, Vec2, Quaternion, utils::Id};
+
+use crate::utils::Lerp;
 
 const CAM_MAX_ANG: f32 = FRAC_PI_2 - 0.1;
 

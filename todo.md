@@ -1,1 +1,2 @@
 - Animations with quaternion rotation instead of using matrix.
+- Use vertex_attr_array macro
